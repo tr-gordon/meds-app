@@ -199,6 +199,54 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 .day-btn.sel{border-color:var(--e);background:var(--e-bg);color:var(--e);}
 .day-count-lbl{font-size:11px;color:var(--muted);margin-bottom:12px;margin-top:4px;}
 
+.diet-trend-day{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 13px;margin-bottom:8px;}
+.diet-trend-day-label{font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.diet-trend-day-label span{color:var(--d);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;}
+.diet-trend-meal{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);}
+.diet-trend-meal:last-child{border-bottom:none;}
+.diet-trend-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.diet-trend-name{font-size:12px;color:var(--text);flex:1;}
+.diet-trend-cals{font-size:11px;color:var(--muted);flex-shrink:0;}
+.diet-trend-empty{font-size:12px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;text-align:center;padding:8px 0;}
+
+.notif-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+.notif-row-left{display:flex;align-items:center;gap:8px;}
+.notif-row-right{display:flex;align-items:center;gap:10px;}
+.notif-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.notif-label{font-size:13px;font-weight:500;}
+.notif-time{background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;padding:4px 7px;width:90px;-webkit-appearance:none;}
+.notif-toggle{position:relative;width:38px;height:22px;flex-shrink:0;cursor:pointer;}
+.notif-toggle input{opacity:0;width:0;height:0;position:absolute;}
+.notif-slider{position:absolute;inset:0;background:var(--faint);border-radius:11px;transition:background .2s;}
+.notif-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;}
+.notif-toggle input:checked+.notif-slider{background:var(--e);}
+.notif-toggle input:checked+.notif-slider:before{transform:translateX(16px);}
+
+.report-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;}
+.report-section-title{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+.report-score-row{display:flex;gap:8px;margin-bottom:12px;}
+.report-score-cell{flex:1;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 8px;text-align:center;}
+.report-score-val{font-size:20px;font-weight:300;font-family:'DM Serif Display',serif;}
+.report-score-lbl{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
+.report-insight{font-size:13px;color:var(--muted);line-height:1.7;font-style:italic;font-family:'DM Serif Display',serif;margin-bottom:8px;}
+.report-insight:last-child{margin-bottom:0;}
+.report-pillar-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.report-pillar-row:last-child{border-bottom:none;}
+.report-pillar-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.report-pillar-name{font-size:12px;font-weight:500;width:80px;flex-shrink:0;}
+.report-pillar-bar{flex:1;height:4px;background:var(--faint);border-radius:2px;overflow:hidden;}
+.report-pillar-fill{height:100%;border-radius:2px;transition:width .6s;}
+.report-pillar-pct{font-size:11px;color:var(--muted);width:32px;text-align:right;flex-shrink:0;}
+.report-loading{text-align:center;padding:24px 0;}
+.report-loading p{font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;margin-top:10px;}
+.report-gen-btn{width:100%;padding:13px;border-radius:var(--radius-sm);border:1.5px solid var(--e);background:var(--e-bg);color:var(--e);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:8px;}
+.report-gen-btn:active{background:var(--faint);}
+.report-empty{text-align:center;padding:20px 0;}
+.report-empty p{font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;line-height:1.6;}
+.coach-tabs{display:flex;border-bottom:1px solid var(--border);margin:-14px -16px 14px;padding:0 16px;}
+.coach-tab{flex:1;padding:10px 4px;font-size:11px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;transition:color .15s;}
+.coach-tab.active{color:var(--e);border-bottom-color:var(--e);}
+
 /* SCORE COLORS */
 .score-green .score-fill{background:var(--e);}
 .score-amber .score-fill{background:var(--d);}
@@ -492,24 +540,90 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
         <span class="leg-item"><span class="leg-dot" style="background:var(--d);"></span>Diet</span>
         <span class="leg-item"><span class="leg-dot" style="background:var(--s);"></span>Sleep</span>
       </div>
-      <div class="stat-grid">
+      <div class="stat-grid" style="margin-bottom:14px;">
         <div class="stat-card"><div class="stat-val" id="t-streak">0</div><div class="stat-lbl">Day streak</div></div>
         <div class="stat-card"><div class="stat-val" id="t-pct">0%</div><div class="stat-lbl">This week</div></div>
         <div class="stat-card"><div class="stat-val" id="t-score">–</div><div class="stat-lbl">Avg score</div></div>
         <div class="stat-card"><div class="stat-val" id="t-best">–</div><div class="stat-lbl">Best pillar</div></div>
       </div>
+      <p class="sec-lbl" style="color:var(--d);">Diet log — this week</p>
+      <div id="diet-trends-list"></div>
     </div>
 
     <!-- COACH -->
     <div class="screen" id="screen-coach">
-      <p class="sec-lbl">AI coach</p>
-      <div class="coach-box">
-        <p class="coach-tag">Today's insight</p>
-        <p class="coach-text" id="coach-text">Tap below to get personalized coaching based on your MEDS data.</p>
+      <div class="coach-tabs">
+        <button class="coach-tab active" id="ctab-today" onclick="switchCoachTab('today',this)">Today</button>
+        <button class="coach-tab" id="ctab-report" onclick="switchCoachTab('report',this)">Weekly report</button>
       </div>
-      <button class="ask-btn" onclick="askCoach()">Get today's coaching insight →</button>
-      <button class="ask-btn" onclick="askSleep()">Sleep improvement tips →</button>
-      <button class="ask-btn" onclick="askScore()">Explain my MEDS score →</button>
+
+      <!-- TODAY TAB -->
+      <div id="coach-tab-today">
+        <div class="coach-box">
+          <p class="coach-tag">Today's insight</p>
+          <p class="coach-text" id="coach-text">Tap a button below to get personalized coaching from your AI provider.</p>
+        </div>
+        <div id="coach-response-box" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px;margin-bottom:10px;">
+          <p class="ai-tag" id="coach-response-label">Response</p>
+          <p style="font-size:13px;color:var(--text);line-height:1.7;font-style:italic;font-family:'DM Serif Display',serif;" id="coach-response-text"></p>
+        </div>
+        <div id="coach-loading" style="display:none;text-align:center;padding:14px 0;">
+          <div class="spinner" style="border-top-color:var(--e);margin:0 auto;"></div>
+          <p style="font-size:12px;color:var(--muted);margin-top:8px;font-style:italic;font-family:'DM Serif Display',serif;">Thinking...</p>
+        </div>
+        <button class="ask-btn" onclick="askCoach(this)">Get today's coaching insight →</button>
+        <button class="ask-btn" onclick="askSleep(this)">Sleep improvement tips →</button>
+        <button class="ask-btn" onclick="askScore(this)">Explain my MEDS score →</button>
+        <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:4px;" id="coach-api-note"></p>
+      </div>
+
+      <!-- WEEKLY REPORT TAB -->
+      <div id="coach-tab-report" style="display:none;">
+        <div id="report-empty" class="report-empty">
+          <p>Generate your weekly report to see how you did across all four MEDS pillars this week.</p>
+        </div>
+        <div id="report-loading" class="report-loading" style="display:none;">
+          <div class="spinner" style="border-top-color:var(--e);margin:0 auto;"></div>
+          <p>Analyzing your week...</p>
+        </div>
+        <div id="report-content" style="display:none;">
+          <!-- Scores -->
+          <div class="report-section">
+            <p class="report-section-title">Week at a glance</p>
+            <div class="report-score-row">
+              <div class="report-score-cell">
+                <div class="report-score-val" id="rep-score" style="color:var(--e);">–</div>
+                <div class="report-score-lbl">Avg score</div>
+              </div>
+              <div class="report-score-cell">
+                <div class="report-score-val" id="rep-streak">–</div>
+                <div class="report-score-lbl">Streak</div>
+              </div>
+              <div class="report-score-cell">
+                <div class="report-score-val" id="rep-days">–</div>
+                <div class="report-score-lbl">Days logged</div>
+              </div>
+              <div class="report-score-cell">
+                <div class="report-score-val" id="rep-pct">–</div>
+                <div class="report-score-lbl">Completion</div>
+              </div>
+            </div>
+            <div id="rep-pillar-bars"></div>
+          </div>
+          <!-- AI insights -->
+          <div class="report-section" id="rep-insights-section" style="display:none;">
+            <p class="report-section-title">Your AI report</p>
+            <div id="rep-insights"></div>
+          </div>
+          <!-- Recommendations -->
+          <div class="report-section" id="rep-recs-section" style="display:none;">
+            <p class="report-section-title">Focus for next week</p>
+            <div id="rep-recs"></div>
+          </div>
+        </div>
+        <button class="report-gen-btn" id="rep-gen-btn" onclick="generateWeeklyReport()">Generate this week's report</button>
+        <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px;" id="rep-api-note"></p>
+      </div>
     </div>
 
     <!-- PROFILE -->
@@ -563,6 +677,61 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
             <input type="password" id="profile-api-key-input" placeholder="Paste your API key..." style="margin-bottom:8px;font-size:13px;">
             <button class="btn-primary" style="border-color:var(--e);background:var(--e-bg);color:var(--e);" onclick="saveApiKeyFromProfile()">Save API key</button>
           </div>
+        </div>
+      </div>
+      <div class="profile-section" style="margin-top:16px;">
+        <p class="profile-section-title">Reminders</p>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+          <p style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:12px;">Set daily reminders for each MEDS pillar. Works when the app is installed on your home screen.</p>
+          <div id="notif-permission-prompt" style="display:none;margin-bottom:12px;">
+            <button class="btn-primary" style="border-color:var(--e);background:var(--e-bg);color:var(--e);" onclick="requestNotifPermission()">Enable notifications</button>
+          </div>
+          <div id="notif-blocked" style="display:none;margin-bottom:10px;">
+            <p style="font-size:11px;color:#e85a4a;">Notifications are blocked. Please enable them in your browser/phone settings.</p>
+          </div>
+          <div id="notif-settings">
+            <div class="notif-row" id="nrow-m">
+              <div class="notif-row-left">
+                <div class="notif-dot" style="background:var(--m-acc);"></div>
+                <span class="notif-label" style="color:var(--m-acc);">Meditation</span>
+              </div>
+              <div class="notif-row-right">
+                <input type="time" class="notif-time" id="ntime-m" value="07:00" onchange="saveNotifTime('m',this.value)">
+                <label class="notif-toggle"><input type="checkbox" id="ntog-m" onchange="toggleNotif('m',this.checked)"><span class="notif-slider"></span></label>
+              </div>
+            </div>
+            <div class="notif-row" id="nrow-e">
+              <div class="notif-row-left">
+                <div class="notif-dot" style="background:var(--e);"></div>
+                <span class="notif-label" style="color:var(--e);">Exercise</span>
+              </div>
+              <div class="notif-row-right">
+                <input type="time" class="notif-time" id="ntime-e" value="08:00" onchange="saveNotifTime('e',this.value)">
+                <label class="notif-toggle"><input type="checkbox" id="ntog-e" onchange="toggleNotif('e',this.checked)"><span class="notif-slider"></span></label>
+              </div>
+            </div>
+            <div class="notif-row" id="nrow-d">
+              <div class="notif-row-left">
+                <div class="notif-dot" style="background:var(--d);"></div>
+                <span class="notif-label" style="color:var(--d);">Diet</span>
+              </div>
+              <div class="notif-row-right">
+                <input type="time" class="notif-time" id="ntime-d" value="12:00" onchange="saveNotifTime('d',this.value)">
+                <label class="notif-toggle"><input type="checkbox" id="ntog-d" onchange="toggleNotif('d',this.checked)"><span class="notif-slider"></span></label>
+              </div>
+            </div>
+            <div class="notif-row" id="nrow-s" style="border:none;">
+              <div class="notif-row-left">
+                <div class="notif-dot" style="background:var(--s);"></div>
+                <span class="notif-label" style="color:var(--s-acc);">Sleep</span>
+              </div>
+              <div class="notif-row-right">
+                <input type="time" class="notif-time" id="ntime-s" value="21:00" onchange="saveNotifTime('s',this.value)">
+                <label class="notif-toggle"><input type="checkbox" id="ntog-s" onchange="toggleNotif('s',this.checked)"><span class="notif-slider"></span></label>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:10px;color:var(--muted);margin-top:10px;line-height:1.5;">Reminders only fire if that pillar hasn't been logged yet for the day.</p>
         </div>
       </div>
       <button class="reset-btn" onclick="resetApp()">Reset all data</button>
@@ -1068,6 +1237,7 @@ function renderProfile(){
   const w=p.weights||{m:1,e:1,d:1,s:1};
   ['m','e','d','s'].forEach(k=>document.getElementById('p-w-'+k).textContent=w[k]+'×');
   renderProfileApiKey();
+  renderNotifSettings();
 }
 
 function resetApp(){
@@ -1084,7 +1254,7 @@ function showTab(tab,btn){
   document.getElementById('screen-'+tab).classList.add('active');
   btn.classList.add('active');
   if(tab==='trends')renderTrends();
-  if(tab==='coach')renderCoach();
+  if(tab==='coach'){renderCoach();renderReportStats();}
   if(tab==='profile'){renderProfile();}
 }
 
@@ -2387,6 +2557,80 @@ function renderTrends(){
   const best=Object.entries(pillars).sort((a,b)=>b[1]-a[1])[0];
   const names={m:'Meditation',e:'Exercise',d:'Diet',s:'Sleep'};
   document.getElementById('t-best').textContent=best&&best[1]>0?names[best[0]]:'–';
+
+  // Diet detail section
+  const dietList=document.getElementById('diet-trends-list');
+  if(!dietList)return;
+  dietList.innerHTML='';
+  const FULL_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  let anyDiet=false;
+  days.slice().reverse().forEach(date=>{
+    // Try history first, then today's live state
+    const entry=date===todayStr()?{checked:S.checked,details:S.details}:S.history.find(h=>h.date===date);
+    if(!entry||!entry.checked||!entry.checked.d)return;
+    const det=entry.details||{};
+    const d=new Date(date+'T12:00:00');
+    const dayName=date===todayStr()?'Today':FULL_DAYS[d.getDay()];
+    const photoLog=det.photoLog||[];
+    const mealsChecked=det.mealsChecked||{};
+    const checkedForDay=Object.values(mealsChecked).flat().filter(Boolean);
+    // Build what to display
+    const block=document.createElement('div');block.className='diet-trend-day';
+    // Header
+    const totalCals=photoLog.reduce((a,e)=>a+(e.calories||0),0);
+    const calStr=totalCals>0?Math.round(totalCals)+' cal total':'';
+    block.innerHTML='<div class="diet-trend-day-label">'+dayName+(date!==todayStr()?'<span>'+d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>':'<span>today</span>')+'</div>';
+    let hasContent=false;
+
+    // Meal plan completions
+    const planEntry=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(dy=>dy.day===FULL_DAYS[d.getDay()]):null;
+    const planMeals=planEntry?(planEntry.meals||[]):[];
+    const dayChecks=det.mealsChecked?det.mealsChecked[FULL_DAYS[d.getDay()]]||[]:[];
+    if(planMeals.length){
+      planMeals.forEach((meal,i)=>{
+        const done=!!dayChecks[i];
+        const row=document.createElement('div');row.className='diet-trend-meal';
+        row.innerHTML='<div class="diet-trend-dot" style="background:'+(done?'var(--d)':'var(--faint)')+'"></div>'+
+          '<div class="diet-trend-name" style="'+(done?'':'color:var(--muted);')+'">'+meal+'</div>'+
+          '<div class="diet-trend-cals">'+(done?'✓':'')+'</div>';
+        block.appendChild(row);
+        hasContent=true;
+      });
+    }
+
+    // Photo log entries
+    if(photoLog.length){
+      if(planMeals.length){
+        const divider=document.createElement('div');
+        divider.style.cssText='font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:8px 0 4px;';
+        divider.textContent='Photo log';
+        block.appendChild(divider);
+      }
+      photoLog.forEach(meal=>{
+        const row=document.createElement('div');row.className='diet-trend-meal';
+        row.innerHTML='<div class="diet-trend-dot" style="background:var(--d-acc)"></div>'+
+          '<div class="diet-trend-name">'+(meal.mealtime?meal.mealtime+' — ':'')+meal.name+'</div>'+
+          '<div class="diet-trend-cals">'+Math.round(meal.calories||0)+' cal</div>';
+        block.appendChild(row);
+        hasContent=true;
+      });
+      if(totalCals>0){
+        const totRow=document.createElement('div');
+        totRow.style.cssText='text-align:right;font-size:11px;color:var(--d);margin-top:5px;padding-top:5px;border-top:1px solid var(--border);';
+        totRow.textContent=Math.round(totalCals)+' cal total';
+        block.appendChild(totRow);
+      }
+    }
+
+    if(!hasContent){
+      block.innerHTML+='<div class="diet-trend-empty">Diet logged — no detail available</div>';
+    }
+    dietList.appendChild(block);
+    anyDiet=true;
+  });
+  if(!anyDiet){
+    dietList.innerHTML='<div style="text-align:center;padding:16px 0;font-size:13px;color:var(--muted);font-style:italic;font-family:\'DM Serif Display\',serif;">No diet logs this week yet.</div>';
+  }
 }
 
 const COACH_MSGS=[
@@ -2402,6 +2646,219 @@ function renderCoach(){
   const p=S.profile;const name=p&&p.name?p.name.split(' ')[0]:'';
   const hi=name?name+', ':'' ;
   document.getElementById('coach-text').textContent=done===4&&S.score?hi+'your MEDS score today is '+S.score+'/10. '+(S.score>=8?'An outstanding day — your consistency is building something real.':S.score>=5?'Solid progress. Each pillar you complete compounds over time.':'Every day is data. Rest, reflect, and come back stronger tomorrow.'):COACH_MSGS[Math.floor(Math.random()*COACH_MSGS.length)];
+  const noteEl=document.getElementById('coach-api-note');
+  if(noteEl){
+    const key=getApiKey();
+    noteEl.textContent=key?'Using '+PROVIDERS[selectedProvider].name+' — tap a button for AI coaching':'Add an API key in Profile to enable AI coaching';
+  }
+}
+
+function switchCoachTab(tab,btn){
+  document.getElementById('coach-tab-today').style.display=tab==='today'?'block':'none';
+  document.getElementById('coach-tab-report').style.display=tab==='report'?'block':'none';
+  document.querySelectorAll('.coach-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='report'){
+    renderReportStats();
+    // Restore saved AI report if it exists and is from this week
+    if(S.weeklyReport&&S.weeklyReport.insights){
+      const insEl=document.getElementById('rep-insights');
+      if(insEl&&!insEl.innerHTML){
+        insEl.innerHTML='';
+        (S.weeklyReport.insights||[]).forEach(ins=>{
+          const p2=document.createElement('p');p2.className='report-insight';p2.textContent=ins;
+          insEl.appendChild(p2);
+        });
+        document.getElementById('rep-insights-section').style.display='block';
+        const recEl=document.getElementById('rep-recs');
+        (S.weeklyReport.recommendations||[]).forEach((rec,i)=>{
+          const row=document.createElement('div');
+          row.style.cssText='display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
+          row.innerHTML='<div style="width:20px;height:20px;border-radius:50%;background:var(--e-bg);border:1px solid var(--e);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--e);flex-shrink:0;font-weight:500;">'+(i+1)+'</div>'+
+            '<p style="font-size:13px;color:var(--text);line-height:1.55;">'+rec+'</p>';
+          recEl.appendChild(row);
+        });
+        document.getElementById('rep-recs-section').style.display='block';
+        document.getElementById('rep-gen-btn').textContent='Regenerate report';
+      }
+    }
+  }
+}
+
+function buildWeekData(){
+  const days=[];
+  for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*86400000);days.push(d.toISOString().split('T')[0]);}
+  const week=days.map(date=>{
+    if(date===todayStr())return{date,checked:{...S.checked},logs:{...S.logs},details:{...S.details},score:S.score};
+    return S.history.find(h=>h.date===date)||null;
+  }).filter(Boolean);
+  return week;
+}
+
+function renderReportStats(){
+  const week=buildWeekData();
+  const noteEl=document.getElementById('rep-api-note');
+  if(!week.length){
+    document.getElementById('report-empty').style.display='block';
+    document.getElementById('report-content').style.display='none';
+    if(noteEl)noteEl.textContent='';
+    return;
+  }
+  document.getElementById('report-empty').style.display='none';
+  document.getElementById('report-content').style.display='block';
+
+  const scores=week.filter(e=>e.score).map(e=>e.score);
+  const avgScore=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+  const daysLogged=week.filter(e=>Object.values(e.checked).some(Boolean)).length;
+  const total=week.reduce((a,e)=>a+Object.values(e.checked).filter(Boolean).length,0);
+  const pct=week.length?Math.round((total/(week.length*4))*100):0;
+
+  document.getElementById('rep-score').textContent=avgScore||'–';
+  document.getElementById('rep-score').style.color=avgScore>=8?'var(--e)':avgScore>=5?'var(--d)':'#e85a4a';
+  document.getElementById('rep-streak').textContent=S.streak;
+  document.getElementById('rep-days').textContent=daysLogged+'/7';
+  document.getElementById('rep-pct').textContent=pct+'%';
+
+  const pillars={m:0,e:0,d:0,s:0};
+  week.forEach(e=>{['m','e','d','s'].forEach(k=>{if(e.checked[k])pillars[k]++;});});
+  const pColors={m:'var(--m-acc)',e:'var(--e)',d:'var(--d)',s:'var(--s-acc)'};
+  const pNames={m:'Meditation',e:'Exercise',d:'Diet',s:'Sleep'};
+  const bars=document.getElementById('rep-pillar-bars');
+  bars.innerHTML='';
+  ['m','e','d','s'].forEach(k=>{
+    const pct=Math.round((pillars[k]/7)*100);
+    const row=document.createElement('div');row.className='report-pillar-row';
+    row.innerHTML=`<div class="report-pillar-dot" style="background:${pColors[k]}"></div>
+      <div class="report-pillar-name" style="color:${pColors[k]}">${pNames[k]}</div>
+      <div class="report-pillar-bar"><div class="report-pillar-fill" style="width:${pct}%;background:${pColors[k]}"></div></div>
+      <div class="report-pillar-pct">${pillars[k]}/7</div>`;
+    bars.appendChild(row);
+  });
+
+  // Show API note
+  const key=getApiKey();
+  if(noteEl)noteEl.textContent=key?'Using '+PROVIDERS[selectedProvider].name+' for AI insights':'Add an API key in Profile to get AI-powered insights';
+}
+
+async function generateWeeklyReport(){
+  const week=buildWeekData();
+  if(!week.length){alert('No data this week yet. Log your MEDS pillars first.');return;}
+  renderReportStats();
+  const key=getApiKey();
+  if(!key){
+    // Show stats-only report without AI
+    document.getElementById('rep-insights-section').style.display='none';
+    document.getElementById('rep-recs-section').style.display='none';
+    document.getElementById('rep-gen-btn').textContent='Add API key for AI insights';
+    return;
+  }
+  document.getElementById('report-loading').style.display='block';
+  document.getElementById('rep-insights-section').style.display='none';
+  document.getElementById('rep-recs-section').style.display='none';
+  document.getElementById('rep-gen-btn').style.display='none';
+
+  try{
+    const p=S.profile||{};
+    const pillars={m:0,e:0,d:0,s:0};
+    const scores=[];
+    week.forEach(e=>{
+      ['m','e','d','s'].forEach(k=>{if(e.checked[k])pillars[k]++;});
+      if(e.score)scores.push(e.score);
+    });
+    const avgScore=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+    const summaryLines=week.map(e=>{
+      const d=e.details||{};
+      const date=new Date(e.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      const parts=[];
+      if(e.checked.m)parts.push('meditated '+(d.medDur||'?')+'min');
+      if(e.checked.e)parts.push('exercised '+(d.edur||'?')+'min');
+      if(e.checked.d){
+        const meals=d.dmeals||'?';const cals=d.totalCalories?d.totalCalories+'cal':'';
+        parts.push('diet '+(meals)+' meals'+(cals?' '+cals:''));
+      }
+      if(e.checked.s)parts.push('slept '+(d.shrs||'?')+'hrs '+(d.squal||''));
+      return date+': '+(parts.length?parts.join(', '):'rest day');
+    }).join('\n');
+
+    const prompt=`You are a wellness coach analyzing a week of MEDS (Meditation, Exercise, Diet, Sleep) data for ${p.name||'this user'}${p.age?', age '+p.age:''}. Their primary goal: ${p.goal||'general wellness'}.
+
+Weekly summary:
+${summaryLines}
+
+Stats: Meditation ${pillars.m}/7 days, Exercise ${pillars.e}/7, Diet ${pillars.d}/7, Sleep ${pillars.s}/7. Avg MEDS score: ${avgScore||'N/A'}. Streak: ${S.streak} days.
+
+Write a warm, honest, personalized weekly report. Return ONLY valid JSON, no markdown:
+{
+  "headline": "One punchy sentence summarizing their week (max 12 words)",
+  "insights": [
+    "Paragraph about their strongest pillar this week and what it shows",
+    "Paragraph about their weakest pillar and what might be causing it",
+    "Paragraph about patterns across the week — any connections between pillars"
+  ],
+  "recommendations": [
+    "Specific, actionable recommendation #1 for next week",
+    "Specific, actionable recommendation #2 for next week",
+    "Specific, actionable recommendation #3 for next week"
+  ]
+}`;
+
+    const text=await callVisionAPIText(prompt);
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+
+    // Render headline into coach box on today tab
+    document.getElementById('coach-text').textContent=parsed.headline||'Report ready — check your Weekly report tab.';
+
+    // Render insights
+    const insEl=document.getElementById('rep-insights');insEl.innerHTML='';
+    (parsed.insights||[]).forEach(ins=>{
+      const p2=document.createElement('p');p2.className='report-insight';p2.textContent=ins;
+      insEl.appendChild(p2);
+    });
+    document.getElementById('rep-insights-section').style.display='block';
+
+    // Render recommendations
+    const recEl=document.getElementById('rep-recs');recEl.innerHTML='';
+    (parsed.recommendations||[]).forEach((rec,i)=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
+      row.innerHTML='<div style="width:20px;height:20px;border-radius:50%;background:var(--e-bg);border:1px solid var(--e);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--e);flex-shrink:0;font-weight:500;">'+(i+1)+'</div>'+
+        '<p style="font-size:13px;color:var(--text);line-height:1.55;">'+rec+'</p>';
+      recEl.appendChild(row);
+    });
+    document.getElementById('rep-recs-section').style.display='block';
+
+    // Save report to state
+    S.weeklyReport={generated:Date.now(),headline:parsed.headline,insights:parsed.insights,recommendations:parsed.recommendations,stats:{pillars,avgScore,streak:S.streak}};
+    saveStateLS(S);
+  }catch(err){
+    document.getElementById('rep-insights').innerHTML='<p class="report-insight">Could not generate AI insights. Check your API key and try again.</p>';
+    document.getElementById('rep-insights-section').style.display='block';
+  }finally{
+    document.getElementById('report-loading').style.display='none';
+    document.getElementById('rep-gen-btn').style.display='block';
+    document.getElementById('rep-gen-btn').textContent='Regenerate report';
+  }
+}
+
+async function callVisionAPIText(prompt){
+  const key=getApiKey();
+  if(!key)throw new Error('no-key');
+  if(selectedProvider==='anthropic'){
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1200,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message);
+    return d.content.map(c=>c.text||'').join('');
+  }
+  if(selectedProvider==='openai'){
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o',max_tokens:1200,messages:[{role:'user',content:prompt}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message);
+    return d.choices[0].message.content;
+  }
+  if(selectedProvider==='gemini'){
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:prompt}]}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message);
+    return d.candidates[0].content.parts[0].text;
+  }
+  throw new Error('Unknown provider');
 }
 
 function buildPrompt(){
@@ -2411,26 +2868,133 @@ function buildPrompt(){
   return profileCtx+'MEDS data — '+new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'\nStreak: '+S.streak+' days | Pillars: '+done+'/4 | Score: '+(S.score||'pending')+'\nMeditation: '+(d.medDur||'not logged')+' min '+(d.medType||'')+(d.medNotes?' ('+d.medNotes+')':'')+'\nExercise: '+(d.wtype||'not logged')+' '+(d.muscle||'')+' '+(d.intensity||'')+' '+(d.edur||'')+' min\nDiet: goal='+(d.dgoal||'not set')+', pref='+(d.dpref||'none')+', meals='+(d.dmeals||'?')+(d.totalCalories?' ('+d.totalCalories+' cal)':'')+'\nSleep: '+(d.shrs||'?')+' hrs, quality='+(d.squal||'unknown')+', bed='+(d.sbed||'?')+(d.sleepNotes?' ('+d.sleepNotes+')':'');
 }
 
-function askCoach(){
-  window.opener&&window.opener.sendPrompt?window.opener.sendPrompt('Based on my MEDS data: '+buildPrompt()+' — Give me specific, personalized coaching advice for today. Be direct and actionable.'):alert('Open this page inside Claude.ai to get live AI coaching.');
+async function callCoach(prompt,label,btn){
+  const key=getApiKey();
+  const noteEl=document.getElementById('coach-api-note');
+  if(!key){
+    if(noteEl)noteEl.textContent='Add an API key in Profile → AI photo analysis to use coaching.';
+    document.getElementById('coach-response-label').textContent=label;
+    document.getElementById('coach-response-text').textContent='No API key configured. Go to Profile → AI photo analysis to add your '+PROVIDERS[selectedProvider].name+' key.';
+    document.getElementById('coach-response-box').style.display='block';
+    return;
+  }
+  if(noteEl)noteEl.textContent='Using '+PROVIDERS[selectedProvider].name;
+  document.getElementById('coach-loading').style.display='block';
+  document.getElementById('coach-response-box').style.display='none';
+  document.querySelectorAll('#coach-tab-today .ask-btn').forEach(b=>{b.disabled=true;b.style.opacity='0.5';});
+  try{
+    const text=await callVisionAPIText(buildPrompt()+'\n\n'+prompt);
+    document.getElementById('coach-response-label').textContent=label;
+    document.getElementById('coach-response-text').textContent=text.replace(/```/g,'').trim();
+    document.getElementById('coach-response-box').style.display='block';
+    document.getElementById('coach-text').textContent=text.split('.')[0]+'.';
+  }catch(err){
+    document.getElementById('coach-response-label').textContent='Error';
+    document.getElementById('coach-response-text').textContent='Could not reach '+PROVIDERS[selectedProvider].name+'. Check your API key and try again.';
+    document.getElementById('coach-response-box').style.display='block';
+  }finally{
+    document.getElementById('coach-loading').style.display='none';
+    document.querySelectorAll('#coach-tab-today .ask-btn').forEach(b=>{b.disabled=false;b.style.opacity='1';});
+  }
 }
-function askSleep(){
-  window.opener&&window.opener.sendPrompt?window.opener.sendPrompt('Based on my MEDS data: '+buildPrompt()+' — Give me detailed, personalized sleep improvement tips for tonight. Factor in how my meditation, exercise, and diet today affect my sleep quality.'):alert('Open this page inside Claude.ai to get live AI coaching.');
-}
-function askScore(){
-  window.opener&&window.opener.sendPrompt?window.opener.sendPrompt('Based on my MEDS data: '+buildPrompt()+' — Explain my MEDS score in detail. What drove it up or down? What should I prioritize tomorrow?'):alert('Open this page inside Claude.ai to get live AI coaching.');
-}
+
+function askCoach(btn){callCoach('Give me specific, personalized coaching advice for today based on my MEDS data above. Be direct, warm, and actionable. 3-4 sentences.','Today\'s coaching',btn);}
+function askSleep(btn){callCoach('Give me detailed, personalized sleep improvement tips for tonight. Factor in how my meditation, exercise, and diet today affect my sleep quality. 3-4 sentences.','Sleep tips',btn);}
+function askScore(btn){callCoach('Explain my MEDS score in detail. What drove it up or down today? What one thing should I prioritize tomorrow? 3-4 sentences.','Score breakdown',btn);}
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{
   o.addEventListener('click',function(e){if(e.target===this){const k=this.id.replace('modal-','');closeModal(k);}});
 });
+
+const NOTIF_MSGS={
+  m:{title:'Time to meditate',body:'Your daily meditation reminder. Take a few minutes for yourself.'},
+  e:{title:'Time to move',body:'Your exercise reminder. Even a 10-minute walk counts.'},
+  d:{title:'Meal check-in',body:'Have you logged your meals today? Stay on track with your diet goals.'},
+  s:{title:'Wind down for sleep',body:'Your sleep reminder. Start your bedtime routine for a good night\'s rest.'}
+};
+
+function getNotifSettings(){try{return JSON.parse(localStorage.getItem('meds-notif')||'{}');}catch(e){return {};}}
+function saveNotifSettings(s){try{localStorage.setItem('meds-notif',JSON.stringify(s));}catch(e){}}
+
+function renderNotifSettings(){
+  const settings=getNotifSettings();
+  ['m','e','d','s'].forEach(k=>{
+    const tog=document.getElementById('ntog-'+k);
+    const time=document.getElementById('ntime-'+k);
+    if(tog)tog.checked=!!(settings[k]&&settings[k].enabled);
+    if(time&&settings[k]&&settings[k].time)time.value=settings[k].time;
+  });
+  const perm=('Notification' in window)?Notification.permission:'denied';
+  const promptEl=document.getElementById('notif-permission-prompt');
+  const blockedEl=document.getElementById('notif-blocked');
+  if(promptEl)promptEl.style.display=perm==='default'?'block':'none';
+  if(blockedEl)blockedEl.style.display=perm==='denied'&&Object.values(settings).some(v=>v&&v.enabled)?'block':'none';
+}
+
+function saveNotifTime(k,val){
+  const settings=getNotifSettings();
+  if(!settings[k])settings[k]={};
+  settings[k].time=val;
+  saveNotifSettings(settings);
+  scheduleNotifications();
+}
+
+function toggleNotif(k,enabled){
+  if(enabled&&'Notification' in window&&Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{
+      renderNotifSettings();
+      if(p==='granted'){
+        const settings=getNotifSettings();
+        if(!settings[k])settings[k]={};
+        settings[k].enabled=true;
+        saveNotifSettings(settings);
+        scheduleNotifications();
+        const tog=document.getElementById('ntog-'+k);
+        if(tog)tog.checked=true;
+      }
+    });
+    return;
+  }
+  const settings=getNotifSettings();
+  if(!settings[k])settings[k]={};
+  settings[k].enabled=enabled&&('Notification' in window)&&Notification.permission==='granted';
+  saveNotifSettings(settings);
+  scheduleNotifications();
+  renderNotifSettings();
+}
+
+function requestNotifPermission(){
+  if(!('Notification' in window))return;
+  Notification.requestPermission().then(()=>{renderNotifSettings();scheduleNotifications();});
+}
+
+function scheduleNotifications(){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  if(window._notifTimers){window._notifTimers.forEach(t=>clearTimeout(t));}
+  window._notifTimers=[];
+  const settings=getNotifSettings();
+  const now=new Date();
+  ['m','e','d','s'].forEach(k=>{
+    const cfg=settings[k];
+    if(!cfg||!cfg.enabled||!cfg.time)return;
+    const [hh,mm]=cfg.time.split(':').map(Number);
+    const fire=new Date();fire.setHours(hh,mm,0,0);
+    if(fire<=now)return;
+    const t=setTimeout(()=>{
+      if(!S.checked[k]){
+        const msg=NOTIF_MSGS[k];
+        try{new Notification(msg.title,{body:msg.body,tag:'meds-'+k,renotify:true});}catch(e){}
+      }
+    },fire-now);
+    window._notifTimers.push(t);
+  });
+}
 
 window.addEventListener('DOMContentLoaded',()=>{
   const now=new Date();
   document.getElementById('date-lbl').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const todayEntry=S.history.find(h=>h.date===todayStr());
   if(todayEntry){S.checked={...todayEntry.checked};S.logs={...todayEntry.logs};S.details={...todayEntry.details};S.score=todayEntry.score||null;}
-  // Always load photo log from its own key — more reliable than history for large data
   loadPhotoLog();
   if(!S.profile||!S.profile.onboarded){
     document.getElementById('onboard').style.display='flex';
@@ -2444,6 +3008,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone=window.navigator.standalone;
   if(isIOS&&!isStandalone&&S.profile){document.getElementById('install-banner').style.display='flex';}
+  scheduleNotifications();
 });
 </script>
 </body>
