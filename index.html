@@ -193,6 +193,12 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 .grocery-item-text{font-size:13px;color:var(--text);flex:1;}
 .grocery-item-text.done{color:var(--muted);text-decoration:line-through;}
 
+.day-selector{display:flex;gap:6px;margin-bottom:4px;}
+.day-btn{flex:1;padding:10px 4px;border-radius:10px;border:1px solid var(--border);background:transparent;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;text-align:center;transition:all .15s;font-family:'DM Sans',sans-serif;-webkit-user-select:none;}
+.day-btn:active{transform:scale(.95);}
+.day-btn.sel{border-color:var(--e);background:var(--e-bg);color:var(--e);}
+.day-count-lbl{font-size:11px;color:var(--muted);margin-bottom:12px;margin-top:4px;}
+
 /* SCORE COLORS */
 .score-green .score-fill{background:var(--e);}
 .score-amber .score-fill{background:var(--d);}
@@ -591,39 +597,25 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 
       <!-- TODAY TAB -->
       <div id="ex-tab-today">
-        <p class="field-lbl">Workout type</p>
-        <div class="chip-row">
-          <div class="chip" onclick="selChip(this,'wtype','Strength')">Strength</div>
-          <div class="chip" onclick="selChip(this,'wtype','Cardio')">Cardio</div>
-          <div class="chip" onclick="selChip(this,'wtype','Yoga')">Yoga</div>
-          <div class="chip" onclick="selChip(this,'wtype','HIIT')">HIIT</div>
-          <div class="chip" onclick="selChip(this,'wtype','Sports')">Sports</div>
+        <div id="ex-today-from-plan" style="display:none;">
+          <div class="ai-card" style="margin-bottom:12px;">
+            <p class="ai-tag">Today's session</p>
+            <p class="ai-text" id="ex-today-focus-lbl"></p>
+          </div>
+          <div class="routine-block" id="ex-today-plan-list"></div>
+          <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">All exercises are editable — tap text to change</p>
         </div>
-        <p class="field-lbl">Focus area</p>
-        <div class="chip-row">
-          <div class="chip" onclick="selChip(this,'muscle','Full body')">Full body</div>
-          <div class="chip" onclick="selChip(this,'muscle','Upper body')">Upper body</div>
-          <div class="chip" onclick="selChip(this,'muscle','Lower body')">Lower body</div>
-          <div class="chip" onclick="selChip(this,'muscle','Core')">Core</div>
-          <div class="chip" onclick="selChip(this,'muscle','Back')">Back</div>
+        <div id="ex-today-rest" style="display:none;">
+          <div class="ai-card">
+            <p class="ai-tag">Today</p>
+            <p class="ai-text" id="ex-today-rest-lbl">Rest & recovery day — light walk or gentle stretch.</p>
+          </div>
         </div>
-        <p class="field-lbl">Intensity</p>
-        <div class="chip-row">
-          <div class="chip" onclick="selChip(this,'intensity','Light')">Light</div>
-          <div class="chip" onclick="selChip(this,'intensity','Moderate')">Moderate</div>
-          <div class="chip" onclick="selChip(this,'intensity','High')">High</div>
-        </div>
-        <p class="field-lbl">Duration</p>
-        <div class="chip-row">
-          <div class="chip" onclick="selChip(this,'edur','20')">20 min</div>
-          <div class="chip" onclick="selChip(this,'edur','30')">30 min</div>
-          <div class="chip" onclick="selChip(this,'edur','45')">45 min</div>
-          <div class="chip" onclick="selChip(this,'edur','60')">60 min</div>
-          <div class="chip" onclick="selChip(this,'edur','90')">90 min</div>
-        </div>
-        <button class="btn-primary" style="margin-top:14px;" onclick="generateWorkout()">Generate today's routine</button>
-        <div id="workout-result" style="display:none;">
-          <div class="routine-block" id="workout-list"></div>
+        <div id="ex-today-no-plan">
+          <div style="text-align:center;padding:20px 0 8px;">
+            <p style="font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;line-height:1.6;">No weekly plan yet. Go to the Weekly plan tab to generate your schedule first.</p>
+          </div>
+          <button class="btn-primary" style="margin-top:8px;" onclick="switchExTab('week');document.getElementById('etab-week').click()">Set up weekly plan →</button>
         </div>
       </div>
 
@@ -637,13 +629,17 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
           <div class="chip" onclick="toggleMultiChip(this,'wk-style','Yoga')">Yoga</div>
           <div class="chip" onclick="toggleMultiChip(this,'wk-style','Sports')">Sports</div>
         </div>
-        <p class="field-lbl">Days per week</p>
-        <div class="chip-row">
-          <div class="chip" onclick="selChip(this,'wk-days','3')">3 days</div>
-          <div class="chip" onclick="selChip(this,'wk-days','4')">4 days</div>
-          <div class="chip" onclick="selChip(this,'wk-days','5')">5 days</div>
-          <div class="chip" onclick="selChip(this,'wk-days','6')">6 days</div>
+        <p class="field-lbl">Workout days <span style="color:var(--e);font-size:10px;letter-spacing:.03em;text-transform:none;">tap to toggle</span></p>
+        <div class="day-selector" id="wk-day-selector">
+          <div class="day-btn sel" data-day="Mon" onclick="toggleWorkoutDay(this)">Mon</div>
+          <div class="day-btn" data-day="Tue" onclick="toggleWorkoutDay(this)">Tue</div>
+          <div class="day-btn sel" data-day="Wed" onclick="toggleWorkoutDay(this)">Wed</div>
+          <div class="day-btn" data-day="Thu" onclick="toggleWorkoutDay(this)">Thu</div>
+          <div class="day-btn sel" data-day="Fri" onclick="toggleWorkoutDay(this)">Fri</div>
+          <div class="day-btn" data-day="Sat" onclick="toggleWorkoutDay(this)">Sat</div>
+          <div class="day-btn" data-day="Sun" onclick="toggleWorkoutDay(this)">Sun</div>
         </div>
+        <p class="day-count-lbl" id="wk-day-count">3 days selected</p>
         <p class="field-lbl">Session length</p>
         <div class="chip-row">
           <div class="chip" onclick="selChip(this,'wk-dur','30')">30 min</div>
@@ -695,32 +691,19 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 
         <!-- TODAY MEAL -->
         <div id="mp-tab-today">
-          <p class="field-lbl">Primary goal</p>
-          <div class="chip-row">
-            <div class="chip" onclick="selChip(this,'dgoal','Lose weight','d')">Lose weight</div>
-            <div class="chip" onclick="selChip(this,'dgoal','Build muscle','d')">Build muscle</div>
-            <div class="chip" onclick="selChip(this,'dgoal','Improve energy','d')">Improve energy</div>
-            <div class="chip" onclick="selChip(this,'dgoal','Eat cleaner','d')">Eat cleaner</div>
-            <div class="chip" onclick="selChip(this,'dgoal','Maintain','d')">Maintain</div>
+          <div id="diet-today-from-plan" style="display:none;">
+            <div class="ai-card" style="margin-bottom:12px;">
+              <p class="ai-tag">Today's meals</p>
+              <p class="ai-text" id="diet-today-day-lbl"></p>
+            </div>
+            <div id="diet-today-plan-list"></div>
+            <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Tap any meal to edit it</p>
           </div>
-          <p class="field-lbl">Dietary preference</p>
-          <div class="chip-row">
-            <div class="chip" onclick="selChip(this,'dpref','No restriction','d')">No restriction</div>
-            <div class="chip" onclick="selChip(this,'dpref','Vegetarian','d')">Vegetarian</div>
-            <div class="chip" onclick="selChip(this,'dpref','Vegan','d')">Vegan</div>
-            <div class="chip" onclick="selChip(this,'dpref','Keto','d')">Keto</div>
-            <div class="chip" onclick="selChip(this,'dpref','Paleo','d')">Paleo</div>
-          </div>
-          <p class="field-lbl">Meals per day</p>
-          <div class="chip-row">
-            <div class="chip" onclick="selChip(this,'dmeals','2','d')">2</div>
-            <div class="chip" onclick="selChip(this,'dmeals','3','d')">3</div>
-            <div class="chip" onclick="selChip(this,'dmeals','4','d')">4</div>
-            <div class="chip" onclick="selChip(this,'dmeals','5','d')">5</div>
-          </div>
-          <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:14px;" onclick="generateMeal()">Generate today's meals</button>
-          <div id="meal-result" style="display:none;">
-            <div class="routine-block" id="meal-list"></div>
+          <div id="diet-today-no-plan">
+            <div style="text-align:center;padding:20px 0 8px;">
+              <p style="font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;line-height:1.6;">No weekly meal plan yet. Go to "This week" to generate your plan first.</p>
+            </div>
+            <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:8px;" onclick="switchMealTab('week')">Set up weekly meal plan →</button>
           </div>
         </div>
 
@@ -1036,17 +1019,7 @@ function openModal(k){
     }else if(!S.checked.m&&clrBtn){clrBtn.remove();}
   }
   if(k==='e'){
-    preSelectChip('wtype',d.wtype);
-    preSelectChip('muscle',d.muscle);
-    preSelectChip('intensity',d.intensity);
-    preSelectChip('edur',d.edur);
-    const saveBtn=document.getElementById('save-e-btn');
-    if(d.wtype){
-      document.getElementById('workout-result').style.display='block';
-      document.getElementById('save-e-btn').style.display='block';
-      if(saveBtn)saveBtn.textContent=S.checked.e?'Update workout':'Log this workout';
-      restoreWorkoutList();
-    }
+    loadTodayExercise();
     const foot=document.querySelector('#modal-e .modal-foot');
     let clrBtn=document.getElementById('clear-e');
     if(S.checked.e&&!clrBtn){
@@ -1057,13 +1030,7 @@ function openModal(k){
     }else if(!S.checked.e&&clrBtn){clrBtn.remove();}
   }
   if(k==='d'){
-    preSelectChip('dgoal',d.dgoal,'d');
-    preSelectChip('dpref',d.dpref,'d');
-    preSelectChip('dmeals',d.dmeals,'d');
-    if(S.checked.d){
-      document.getElementById('save-d-btn').style.display='block';
-      document.getElementById('save-d-btn').textContent='Update meal plan';
-    }
+    loadTodayMeal();
     const foot=document.querySelector('#modal-d .modal-foot');
     let clrBtn=document.getElementById('clear-d');
     if(S.checked.d&&!clrBtn){
@@ -1192,6 +1159,18 @@ function selChip(el,group,val,color){
   el.classList.add(color?'sel-'+color:'sel');
 }
 
+function toggleWorkoutDay(el){
+  el.classList.toggle('sel');
+  const sel=document.querySelectorAll('#wk-day-selector .day-btn.sel');
+  const count=sel.length;
+  document.getElementById('wk-day-count').textContent=count+' day'+(count===1?'':'s')+' selected';
+}
+
+function getSelectedWorkoutDays(){
+  const sel=document.querySelectorAll('#wk-day-selector .day-btn.sel');
+  return Array.from(sel).map(el=>el.dataset.day);
+}
+
 function toggleMultiChip(el,group,val,color){
   if(!multiChips[group])multiChips[group]=[];
   const idx=multiChips[group].indexOf(val);
@@ -1216,7 +1195,13 @@ function renderCard(k){
   const d=S.details;
   if(k==='m'){sub.textContent=done?(d.medDur?d.medDur+' min'+(d.medType?' · '+d.medType:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.m||0,10)+'%';}
   else if(k==='e'){sub.textContent=done?(d.edur?d.edur+' min'+(d.wtype?' · '+d.wtype:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.e||0,30)+'%';}
-  else if(k==='d'){sub.textContent=done?(d.dmeals?d.dmeals+' meals'+(d.dgoal?' · '+d.dgoal:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.d||0,3)+'%';}
+  else if(k==='d'){
+    const FULL_DAYS_D=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const tE=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(dy=>dy.day===FULL_DAYS_D[new Date().getDay()]):null;
+    const mc=tE?(tE.meals||[]).length:parseInt(d.dmeals)||0;
+    sub.textContent=done?(mc+' meals planned'+(S.details.dgoal?' · '+S.details.dgoal:'')):'Tap to log';
+    pb.style.width=done?'100%':pct(S.logs.d||0,getTgt('d'))+'%';
+  }
   else if(k==='s'){sub.textContent=done?(d.shrs?d.shrs+' hrs'+(d.squal?' · '+d.squal:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.s||0,7)+'%';}
 }
 
@@ -1309,9 +1294,17 @@ function generateWorkout(){
 }
 
 function saveE(){
-  const dur=chips['edur']||'30';
-  S.checked.e=true;S.logs.e=parseInt(dur)||0;
-  S.details.edur=dur;S.details.wtype=chips['wtype']||'';S.details.muscle=chips['muscle']||'';S.details.intensity=chips['intensity']||'';
+  const SHORT_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const FULL_TO_SHORT={Sunday:'Sun',Monday:'Mon',Tuesday:'Tue',Wednesday:'Wed',Thursday:'Thu',Friday:'Fri',Saturday:'Sat'};
+  const todayShort=SHORT_DAYS[new Date().getDay()];
+  const todayEntry=S.weeklyWorkoutPlan?(S.weeklyWorkoutPlan.days||[]).find(d=>FULL_TO_SHORT[d.day]===todayShort):null;
+  const dur=chips['wk-dur']||'45';
+  S.checked.e=true;
+  S.logs.e=parseInt(dur)||45;
+  S.details.edur=dur;
+  S.details.wtype=todayEntry?todayEntry.focus:'';
+  S.details.muscle=todayEntry?todayEntry.focus:'';
+  S.details.intensity='';
   if(Object.values(S.checked).every(Boolean))S.score=computeScore();
   persistToday();renderAll();closeModal('e');
 }
@@ -1363,9 +1356,17 @@ function generateMeal(){
 }
 
 function saveD(){
-  const meals=chips['dmeals']||'3';
-  S.checked.d=true;S.logs.d=parseInt(meals)||0;
-  S.details.dmeals=meals;S.details.dgoal=chips['dgoal']||'';S.details.dpref=chips['dpref']||'';
+  const FULL_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const todayFull=FULL_DAYS[new Date().getDay()];
+  const todayEntry=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(d=>d.day===todayFull):null;
+  const mealCount=todayEntry?(todayEntry.meals||[]).length:3;
+  const goal=(S.weeklyMealPlan&&chips['wk-mgoal'])||'';
+  const pref=(S.weeklyMealPlan&&chips['wk-mpref'])||'';
+  S.checked.d=true;
+  S.logs.d=mealCount;
+  S.details.dmeals=String(mealCount);
+  S.details.dgoal=goal;
+  S.details.dpref=pref;
   if(Object.values(S.checked).every(Boolean))S.score=computeScore();
   persistToday();renderAll();closeModal('d');
 }
@@ -1382,14 +1383,46 @@ function switchDietTab(tab){
 function switchExTab(tab){
   document.getElementById('ex-tab-today').style.display=tab==='today'?'block':'none';
   document.getElementById('ex-tab-week').style.display=tab==='week'?'block':'none';
-  const showSave=tab==='today'&&document.getElementById('workout-result').style.display==='block';
-  document.getElementById('save-e-btn').style.display=showSave?'block':'none';
   ['today','week'].forEach(t=>{
     const btn=document.getElementById('etab-'+t);
     btn.className='dtab'+(t===tab?' active':'');
     btn.style.cssText=t===tab?'border-color:var(--e);background:var(--e-bg);color:var(--e-acc);':'';
   });
+  if(tab==='today') loadTodayExercise();
   if(tab==='week'&&S.weeklyWorkoutPlan)renderWeeklyWorkout(S.weeklyWorkoutPlan);
+}
+
+function loadTodayExercise(){
+  const noPlan=document.getElementById('ex-today-no-plan');
+  const fromPlan=document.getElementById('ex-today-from-plan');
+  const restEl=document.getElementById('ex-today-rest');
+  const saveBtn=document.getElementById('save-e-btn');
+  if(!S.weeklyWorkoutPlan){
+    noPlan.style.display='block';fromPlan.style.display='none';restEl.style.display='none';
+    saveBtn.style.display='none';return;
+  }
+  const SHORT_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const FULL_TO_SHORT={Sunday:'Sun',Monday:'Mon',Tuesday:'Tue',Wednesday:'Wed',Thursday:'Thu',Friday:'Fri',Saturday:'Sat'};
+  const todayShort=SHORT_DAYS[new Date().getDay()];
+  const todayEntry=(S.weeklyWorkoutPlan.days||[]).find(d=>FULL_TO_SHORT[d.day]===todayShort);
+  noPlan.style.display='none';
+  if(!todayEntry||todayEntry.rest){
+    fromPlan.style.display='none';restEl.style.display='block';
+    const restMsg=todayEntry?todayEntry.exercises[0]||'Rest & recovery day':'Rest & recovery day — light walk or gentle stretch.';
+    document.getElementById('ex-today-rest-lbl').textContent=restMsg;
+    saveBtn.style.display='none';
+  }else{
+    restEl.style.display='none';fromPlan.style.display='block';
+    document.getElementById('ex-today-focus-lbl').textContent=todayEntry.day+' — '+todayEntry.focus;
+    const list=document.getElementById('ex-today-plan-list');
+    list.innerHTML='';
+    (todayEntry.exercises||[]).forEach(ex=>{
+      const row=document.createElement('div');row.className='routine-item';
+      row.innerHTML='<div class="rchk" onclick="this.classList.toggle(\'done\');this.querySelector(\'.rchk-in\').style.display=this.classList.contains(\'done\')?\'block\':\'none\'"><div class="rchk-in"></div></div><span class="routine-text" contenteditable="true">'+ex+'</span>';
+      list.appendChild(row);
+    });
+    saveBtn.style.display='block';
+  }
 }
 
 function switchMealTab(tab){
@@ -1399,7 +1432,7 @@ function switchMealTab(tab){
     btn.className='dtab'+(t===tab?' active':'');
     btn.style.cssText=t===tab?'border-color:var(--d);background:var(--d-bg);color:var(--d-acc);':'';
   });
-  document.getElementById('save-d-btn').style.display=tab==='today'&&S.details.dmeals?'block':'none';
+  if(tab==='today') loadTodayMeal();
   if(tab==='grocery'){
     if(S.weeklyMealPlan&&!document.getElementById('grocery-list').innerHTML){buildGroceryList();}
     else if(S.weeklyMealPlan&&document.getElementById('grocery-list').innerHTML){
@@ -1411,29 +1444,387 @@ function switchMealTab(tab){
   if(tab==='week'&&S.weeklyMealPlan)renderWeeklyMeal(S.weeklyMealPlan);
 }
 
-async function generateWeeklyWorkout(){
-  const style=getMulti('wk-style','Strength + Cardio');
-  const days=parseInt(chips['wk-days']||'4');
+function loadTodayMeal(){
+  const noPlan=document.getElementById('diet-today-no-plan');
+  const fromPlan=document.getElementById('diet-today-from-plan');
+  const saveBtn=document.getElementById('save-d-btn');
+  if(!S.weeklyMealPlan){
+    noPlan.style.display='block';fromPlan.style.display='none';
+    saveBtn.style.display='none';return;
+  }
+  const DAYS_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const FULL_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const todayFull=FULL_DAYS[new Date().getDay()];
+  const todayEntry=(S.weeklyMealPlan.days||[]).find(d=>d.day===todayFull);
+  noPlan.style.display='none';
+  fromPlan.style.display='block';
+  document.getElementById('diet-today-day-lbl').textContent=todayFull+(todayEntry?'':' — no plan found');
+  const list=document.getElementById('diet-today-plan-list');
+  list.innerHTML='';
+  if(todayEntry&&todayEntry.meals){
+    todayEntry.meals.forEach((meal,i)=>{
+      const row=document.createElement('div');row.className='routine-item';
+      row.style.cssText='padding:8px 0;';
+      row.innerHTML='<div class="rchk" onclick="this.classList.toggle(\'done\');this.querySelector(\'.rchk-in\').style.display=this.classList.contains(\'done\')?\'block\':\'none\'"><div class="rchk-in"></div></div><span class="routine-text" style="font-size:13px;" contenteditable="true">'+meal+'</span>';
+      list.appendChild(row);
+    });
+  }
+  saveBtn.style.display='block';
+  saveBtn.textContent=S.checked.d?'Update meal log':'Log today\'s meals';
+}
+
+const WK_WORKOUTS={
+  Strength:{
+    'Upper body':['Bench press — 4×8','Incline dumbbell press — 3×10','Cable rows — 4×10','Pull-ups — 3×8','Shoulder press — 3×10','Tricep dips — 3×12','Bicep curls — 3×12'],
+    'Lower body':['Barbell squat — 4×8','Romanian deadlift — 4×10','Leg press — 3×12','Lunges — 3×12 each','Leg curl — 3×12','Calf raises — 4×20','Glute bridges — 3×15'],
+    'Back & Core':['Deadlift — 4×6','Barbell rows — 4×8','Lat pulldown — 3×10','Plank — 4×60s','Russian twists — 3×20','Dead bug — 3×10','Face pulls — 3×15'],
+    'Full body':['Squat — 4×8','Bench press — 3×8','Deadlift — 3×6','Pull-ups — 3×8','Shoulder press — 3×10','Plank — 3×45s'],
+    'Arms & Shoulders':['Overhead press — 4×10','Lateral raises — 3×15','Bicep curls — 4×12','Hammer curls — 3×12','Tricep pushdowns — 4×12','Face pulls — 3×15']
+  },
+  Cardio:{
+    'Endurance run':['Warm-up walk — 5 min','Easy jog at 60% effort — 20 min','Steady state run — 10 min','Cool-down walk — 5 min'],
+    'Intervals':['Warm-up — 5 min','Sprint 30s / walk 30s — ×10','Tempo run at 80% — 10 min','Cool-down — 5 min'],
+    'Cycling':['Warm-up spin — 5 min','Moderate pace — 20 min','Sprint intervals 30s/30s — ×8','Cool-down — 5 min'],
+    'Row & Cardio':['Rowing machine — 15 min','Jump rope — 5 min','Stair climber — 10 min','Cool-down stretch — 5 min'],
+    'Low impact':['Brisk walk — 10 min','Elliptical — 20 min','Stationary bike — 15 min','Cool-down stretch — 5 min']
+  },
+  HIIT:{
+    'Full body blast':['Burpees — 40s/20s ×4','Jump squats — 40s/20s ×4','Push-ups — 40s/20s ×4','Mountain climbers — 40s/20s ×4','Rest — 90s','Repeat ×2'],
+    'Lower power':['Jump squats — 40s/20s ×5','Speed skaters — 40s/20s ×5','Alternating lunges — 40s/20s ×5','Box jumps — 40s/20s ×4'],
+    'Upper burn':['Push-up variations — 40s/20s ×5','Dips — 40s/20s ×4','Plank to push-up — 40s/20s ×4','Pike push-ups — 40s/20s ×4'],
+    'Core HIIT':['Plank jacks — 40s/20s ×5','V-ups — 40s/20s ×5','Flutter kicks — 40s/20s ×5','Bicycle crunches — 40s/20s ×5'],
+    'Cardio HIIT':['High knees — 40s/20s ×5','Jumping jacks — 40s/20s ×5','Butt kicks — 40s/20s ×5','Lateral shuffles — 40s/20s ×5']
+  },
+  Yoga:{
+    'Flow':['Sun salutation A — 5 rounds','Warrior I & II — 5 breaths each','Triangle pose — 5 breaths each side','Child\'s pose — 2 min','Savasana — 5 min'],
+    'Strength yoga':['Downward dog — 5 breaths','Chaturanga flow — 5 rounds','Warrior III — 5 breaths','Crow pose — 5 attempts','Plank hold — 3×45s'],
+    'Hip & lower':['Low lunge — 5 breaths each','Pigeon pose — 2 min each','Seated forward fold — 3 min','Happy baby — 2 min','Legs up wall — 3 min'],
+    'Restorative':['Child\'s pose — 3 min','Reclined twist — 2 min each','Legs up wall — 5 min','Savasana with breath — 10 min'],
+    'Morning flow':['Cat-cow — 2 min','Sun salutation B — 3 rounds','Warrior sequence — 10 min','Seated stretch — 5 min','Savasana — 3 min']
+  },
+  Sports:{
+    'Agility':['Dynamic warm-up — 5 min','Agility ladder drills — 10 min','Cone drills — 10 min','Sprint work — 10 min','Cool-down — 5 min'],
+    'Power':['Box jumps — 4×8','Medicine ball slams — 4×10','Broad jumps — 3×8','Sprint 40m — ×6','Cool-down — 5 min'],
+    'Conditioning':['Jump rope — 5 min','Shuttle runs — 10 min','Sport drills — 15 min','Core work — 10 min','Cool-down — 5 min'],
+    'Recovery sport':['Light jog — 10 min','Dynamic stretching — 10 min','Mobility work — 15 min','Cool-down — 5 min']
+  }
+};
+
+const REST_DAYS=['Rest & recovery — light walk or stretch only','Active recovery — 20 min easy walk','Rest day — foam roll & mobility work'];
+
+function buildWeeklyWorkoutPlan(styles,goals,selectedDays,dur){
+  const styleList=(styles||'Strength').split(' + ').map(s=>s.trim()).filter(s=>WK_WORKOUTS[s]);
+  if(!styleList.length)styleList.push('Strength');
+  const ALL_SHORT=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const FULL={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
+  const activeSet=new Set(Array.isArray(selectedDays)&&selectedDays.length?selectedDays:['Mon','Wed','Fri']);
+  let focusIdx=0;
+  return{days:ALL_SHORT.map(short=>{
+    const name=FULL[short];
+    if(!activeSet.has(short))return{day:name,focus:'Rest',exercises:[REST_DAYS[focusIdx%REST_DAYS.length]],rest:true};
+    const style=styleList[focusIdx%styleList.length];
+    const lib=WK_WORKOUTS[style]||WK_WORKOUTS.Strength;
+    const focusKeys=Object.keys(lib);
+    const focus=focusKeys[focusIdx%focusKeys.length];
+    const exercises=(lib[focus]||[]).slice(0,6);
+    focusIdx++;
+    return{day:name,focus,exercises,rest:false};
+  })};
+}
+
+
+const WK_MEALS={
+  'No restriction':{
+    'Lose weight':[
+      ['Breakfast: Greek yogurt, berries & flaxseed','Lunch: Grilled chicken salad','Dinner: Baked salmon, broccoli & quinoa'],
+      ['Breakfast: Egg white omelette & spinach','Lunch: Turkey lettuce wraps','Dinner: Lean beef stir-fry with veg'],
+      ['Breakfast: Oats with blueberries','Lunch: Tuna niçoise salad','Dinner: Grilled chicken & roasted veg'],
+      ['Breakfast: Smoothie with protein powder','Lunch: Veggie & hummus wrap','Dinner: Shrimp & zucchini noodles'],
+      ['Breakfast: Cottage cheese & fruit','Lunch: Chicken & quinoa bowl','Dinner: White fish with asparagus'],
+      ['Breakfast: Avocado & poached eggs','Lunch: Lentil soup','Dinner: Turkey meatballs & spaghetti squash'],
+      ['Breakfast: Protein pancakes','Lunch: Grilled salmon salad','Dinner: Chicken & veggie sheet pan']
+    ],
+    'Build muscle':[
+      ['Breakfast: Oats, protein powder & banana','Lunch: Brown rice, chicken & mixed veg','Dinner: Pasta, lean beef & marinara','Snack: Cottage cheese & nuts'],
+      ['Breakfast: Egg scramble & whole grain toast','Lunch: Quinoa, tuna & avocado bowl','Dinner: Grilled steak, sweet potato & greens','Snack: Protein shake & banana'],
+      ['Breakfast: Greek yogurt parfait & granola','Lunch: Chicken burrito bowl','Dinner: Salmon, rice & edamame','Snack: Rice cakes & peanut butter'],
+      ['Breakfast: Protein smoothie bowl','Lunch: Turkey & avocado sandwich','Dinner: Ground beef & veggie stir-fry','Snack: Hard-boiled eggs'],
+      ['Breakfast: French toast & eggs','Lunch: Tuna pasta salad','Dinner: Chicken thighs & roasted potatoes','Snack: Chocolate milk & almonds'],
+      ['Breakfast: Bagel with smoked salmon','Lunch: Beef & rice bowl','Dinner: Pork tenderloin & sweet potato mash','Snack: Protein bar'],
+      ['Breakfast: Waffles & eggs','Lunch: Chicken & vegetable soup','Dinner: Grilled salmon & quinoa pilaf','Snack: Greek yogurt & honey']
+    ],
+    'Improve energy':[
+      ['Breakfast: Overnight oats with walnuts & berries','Lunch: Turkey & spinach whole grain wrap','Dinner: Grilled chicken, brown rice & kale'],
+      ['Breakfast: Smoothie with spinach, banana & almond butter','Lunch: Quinoa & roasted veg bowl','Dinner: Salmon with sweet potato & greens'],
+      ['Breakfast: Avocado toast & soft-boiled eggs','Lunch: Lentil & vegetable soup','Dinner: Stir-fry tofu & brown rice'],
+      ['Breakfast: Chia pudding & mango','Lunch: Grilled chicken & grain bowl','Dinner: Baked cod with roasted veg'],
+      ['Breakfast: Banana walnut oatmeal','Lunch: Chickpea & kale salad','Dinner: Lean beef & vegetable curry'],
+      ['Breakfast: Egg & veggie muffins','Lunch: Tuna & avocado salad','Dinner: Chicken & broccoli pasta'],
+      ['Breakfast: Açaí bowl with granola','Lunch: Black bean & corn salad','Dinner: Shrimp & vegetable fried rice']
+    ],
+    'Eat cleaner':[
+      ['Breakfast: Fresh fruit & whole grain toast','Lunch: Grilled fish tacos & cabbage slaw','Dinner: Turkey meatballs & zucchini noodles'],
+      ['Breakfast: Green smoothie','Lunch: Buddha bowl with tahini','Dinner: Baked chicken & roasted veg'],
+      ['Breakfast: Poached eggs & avocado on rye','Lunch: Lentil & veggie soup','Dinner: Salmon with cucumber salsa'],
+      ['Breakfast: Granola & yogurt','Lunch: Roasted veg & hummus wrap','Dinner: White fish & steamed greens'],
+      ['Breakfast: Banana & almond butter rice cakes','Lunch: Chicken & grain salad','Dinner: Shrimp stir-fry with bok choy'],
+      ['Breakfast: Oatmeal & berries','Lunch: Tomato & lentil soup','Dinner: Grilled chicken & quinoa tabbouleh'],
+      ['Breakfast: Veggie omelette','Lunch: Nicoise salad','Dinner: Baked cod with ratatouille']
+    ]
+  },
+  Vegetarian:{
+    'Lose weight':[
+      ['Breakfast: Greek yogurt & berries','Lunch: Lentil soup & rye bread','Dinner: Veggie stir-fry with tofu'],
+      ['Breakfast: Smoothie bowl','Lunch: Caprese salad & hummus','Dinner: Stuffed peppers with quinoa'],
+      ['Breakfast: Chia pudding','Lunch: Veggie grain bowl','Dinner: Tofu & broccoli stir-fry'],
+      ['Breakfast: Oat bowl & fruit','Lunch: Roasted veg & feta wrap','Dinner: Mushroom & spinach frittata'],
+      ['Breakfast: Avocado toast & egg','Lunch: Minestrone soup','Dinner: Black bean tacos with salsa'],
+      ['Breakfast: Overnight oats','Lunch: Beetroot & goat cheese salad','Dinner: Veggie curry & cauliflower rice'],
+      ['Breakfast: Protein smoothie','Lunch: Grilled halloumi salad','Dinner: Zucchini noodles & marinara']
+    ],
+    'Build muscle':[
+      ['Breakfast: Egg scramble & toast','Lunch: Quinoa & black bean bowl','Dinner: Paneer tikka & rice','Snack: Greek yogurt & nuts'],
+      ['Breakfast: Protein pancakes','Lunch: Lentil & spinach dal','Dinner: Veggie pasta with cheese','Snack: Cottage cheese & fruit'],
+      ['Breakfast: Tofu scramble','Lunch: Caprese sandwich','Dinner: Chickpea & potato curry','Snack: Protein shake'],
+      ['Breakfast: Oats & protein powder','Lunch: Halloumi grain bowl','Dinner: Veggie chilli & brown rice','Snack: Edamame'],
+      ['Breakfast: Yogurt parfait','Lunch: Egg salad sandwich','Dinner: Falafel wrap with hummus','Snack: Nuts & cheese'],
+      ['Breakfast: French toast','Lunch: Roasted veg & quinoa','Dinner: Mushroom risotto','Snack: Protein bar'],
+      ['Breakfast: Smoothie bowl','Lunch: Greek salad with eggs','Dinner: Lentil shepherd\'s pie','Snack: Rice cakes & nut butter']
+    ],
+    'Improve energy':[
+      ['Breakfast: Overnight oats & walnuts','Lunch: Roasted veg grain bowl','Dinner: Tofu stir-fry & brown rice'],
+      ['Breakfast: Banana & almond smoothie','Lunch: Lentil soup & sourdough','Dinner: Vegetable curry & quinoa'],
+      ['Breakfast: Chia & mango pudding','Lunch: Avocado & egg grain bowl','Dinner: Spinach & paneer saag'],
+      ['Breakfast: Granola & yogurt','Lunch: Veggie burrito bowl','Dinner: Black bean & sweet potato soup'],
+      ['Breakfast: Green smoothie','Lunch: Caprese & hummus plate','Dinner: Pasta primavera'],
+      ['Breakfast: Avocado toast & eggs','Lunch: Minestrone','Dinner: Chickpea & spinach curry'],
+      ['Breakfast: Oatmeal & berries','Lunch: Beetroot & feta salad','Dinner: Mushroom & lentil bolognese']
+    ],
+    'Eat cleaner':[
+      ['Breakfast: Green smoothie','Lunch: Roasted veg grain bowl','Dinner: Tofu & broccoli stir-fry'],
+      ['Breakfast: Chia pudding & kiwi','Lunch: Lentil & veggie soup','Dinner: Stuffed courgettes with quinoa'],
+      ['Breakfast: Oatmeal & flaxseed','Lunch: Falafel & tabbouleh','Dinner: Veggie curry & cauliflower rice'],
+      ['Breakfast: Poached eggs & spinach','Lunch: Caprese salad','Dinner: Black bean enchiladas'],
+      ['Breakfast: Overnight oats','Lunch: Hummus & veggie wrap','Dinner: Mushroom & barley soup'],
+      ['Breakfast: Banana & almond toast','Lunch: Greek salad','Dinner: Lentil & tomato stew'],
+      ['Breakfast: Smoothie bowl','Lunch: Avocado & egg salad','Dinner: Spinach & ricotta pasta']
+    ]
+  },
+  Vegan:{
+    'Lose weight':[
+      ['Breakfast: Smoothie bowl & hemp seeds','Lunch: Chickpea & kale salad','Dinner: Lentil dahl & cauliflower rice'],
+      ['Breakfast: Overnight oats & berries','Lunch: Buddha bowl & tahini','Dinner: Tofu stir-fry & brown rice'],
+      ['Breakfast: Chia pudding & mango','Lunch: Black bean soup','Dinner: Veggie & quinoa stuffed peppers'],
+      ['Breakfast: Green smoothie','Lunch: Lentil & veggie wrap','Dinner: Tempeh & broccoli stir-fry'],
+      ['Breakfast: Banana oatmeal','Lunch: Tomato & lentil soup','Dinner: Chickpea tikka masala & cauli rice'],
+      ['Breakfast: Açaí bowl','Lunch: Roasted veg grain bowl','Dinner: Zucchini noodles & pesto'],
+      ['Breakfast: Oat & chia porridge','Lunch: Avocado & black bean salad','Dinner: Mushroom & lentil ragu']
+    ],
+    'Build muscle':[
+      ['Breakfast: Tofu scramble & toast','Lunch: Edamame & brown rice bowl','Dinner: Chickpea curry & naan','Snack: Pea protein shake & almonds'],
+      ['Breakfast: Protein smoothie','Lunch: Tempeh & grain bowl','Dinner: Lentil & vegetable stew','Snack: Nut butter & rice cakes'],
+      ['Breakfast: Oats & plant protein','Lunch: Black bean burrito bowl','Dinner: Tofu & sweet potato curry','Snack: Edamame & seeds'],
+      ['Breakfast: Banana & almond smoothie','Lunch: Quinoa & roasted veg','Dinner: Seitan stir-fry','Snack: Trail mix'],
+      ['Breakfast: Chia & hemp pudding','Lunch: Lentil dal & rice','Dinner: Chickpea & spinach pasta','Snack: Protein bar'],
+      ['Breakfast: Smoothie bowl & granola','Lunch: Falafel & tabbouleh','Dinner: Tempeh & vegetable stir-fry','Snack: Peanut butter on oatcakes'],
+      ['Breakfast: Avocado toast & seeds','Lunch: Tofu & noodle soup','Dinner: Vegan bolognese & pasta','Snack: Mixed nuts']
+    ],
+    'Improve energy':[
+      ['Breakfast: Açaí bowl & granola','Lunch: Buddha bowl & tahini','Dinner: Black bean tacos & guac'],
+      ['Breakfast: Green smoothie','Lunch: Roasted veg grain bowl','Dinner: Lentil & sweet potato soup'],
+      ['Breakfast: Oatmeal & fruit','Lunch: Chickpea salad wrap','Dinner: Tofu & vegetable stir-fry'],
+      ['Breakfast: Banana & nut butter toast','Lunch: Lentil soup & bread','Dinner: Tempeh & bok choy stir-fry'],
+      ['Breakfast: Chia pudding & mango','Lunch: Falafel & hummus bowl','Dinner: Vegan curry & basmati rice'],
+      ['Breakfast: Smoothie with spinach','Lunch: Quinoa & roasted pepper salad','Dinner: Mushroom & lentil stew'],
+      ['Breakfast: Granola & plant yogurt','Lunch: Avocado & tomato salad','Dinner: Chickpea & cauliflower curry']
+    ],
+    'Eat cleaner':[
+      ['Breakfast: Green smoothie & whole fruit','Lunch: Veggie sushi rolls','Dinner: Thai peanut noodle bowl'],
+      ['Breakfast: Oatmeal & flaxseed','Lunch: Lentil & vegetable soup','Dinner: Stuffed peppers with quinoa'],
+      ['Breakfast: Chia pudding & berries','Lunch: Roasted veg & hummus wrap','Dinner: Tofu & broccoli stir-fry'],
+      ['Breakfast: Banana & seed smoothie','Lunch: Buddha bowl','Dinner: Lentil dahl & cauliflower rice'],
+      ['Breakfast: Açaí bowl','Lunch: Chickpea & kale salad','Dinner: Veggie & tofu miso soup'],
+      ['Breakfast: Overnight oats','Lunch: Black bean tacos','Dinner: Mushroom & barley soup'],
+      ['Breakfast: Smoothie bowl','Lunch: Quinoa tabbouleh','Dinner: Tempeh & green bean stir-fry']
+    ]
+  },
+  Keto:{
+    'Lose weight':[
+      ['Breakfast: Scrambled eggs & avocado','Lunch: Tuna & cucumber lettuce wraps','Dinner: Grilled steak & asparagus'],
+      ['Breakfast: Bacon & eggs','Lunch: Cobb salad with ranch','Dinner: Salmon & roasted courgette'],
+      ['Breakfast: Keto smoothie','Lunch: BLT lettuce wraps','Dinner: Pork chop & sautéed greens'],
+      ['Breakfast: Cheese omelette','Lunch: Chicken & avocado salad','Dinner: Ground beef & cauliflower mash'],
+      ['Breakfast: Chia pudding & cream','Lunch: Egg salad in lettuce cups','Dinner: Baked chicken thighs & broccoli'],
+      ['Breakfast: Smoked salmon & cream cheese','Lunch: Greek salad with feta','Dinner: Lamb chops & roasted veg'],
+      ['Breakfast: Avocado & poached eggs','Lunch: Turkey & cheese roll-ups','Dinner: Shrimp & cauliflower fried rice']
+    ],
+    'Build muscle':[
+      ['Breakfast: Bacon, eggs & cheese omelette','Lunch: Ground beef bowl & avocado','Dinner: Salmon & cream sauce with zucchini','Snack: Cheese & deli meat'],
+      ['Breakfast: Full egg scramble & avocado','Lunch: Chicken & bacon salad','Dinner: Ribeye steak & buttered asparagus','Snack: Hard-boiled eggs'],
+      ['Breakfast: Keto protein shake','Lunch: Tuna & avocado lettuce wraps','Dinner: Pork ribs & coleslaw','Snack: Nuts & cheese'],
+      ['Breakfast: Smoked salmon & eggs','Lunch: Beef & cheese stuffed peppers','Dinner: Lamb & roasted veg','Snack: Pepperoni & olives'],
+      ['Breakfast: Bacon & avocado','Lunch: Chicken Caesar salad','Dinner: Ground beef & broccoli stir-fry','Snack: Protein shake'],
+      ['Breakfast: Egg & cheese muffins','Lunch: Steak salad with blue cheese','Dinner: Pork belly & roasted greens','Snack: Almonds'],
+      ['Breakfast: Keto waffles & berries','Lunch: Turkey & avocado wrap','Dinner: Baked salmon & dill cream','Snack: Mixed nuts']
+    ],
+    'Improve energy':[
+      ['Breakfast: Bulletproof coffee & eggs','Lunch: Avocado & egg salad','Dinner: Pork chop & sautéed greens'],
+      ['Breakfast: Bacon & avocado','Lunch: Chicken & cream cheese wrap','Dinner: Salmon & roasted broccoli'],
+      ['Breakfast: Keto smoothie','Lunch: Tuna stuffed avocado','Dinner: Grilled chicken & cauliflower rice'],
+      ['Breakfast: Cheese scramble & spinach','Lunch: Cobb salad','Dinner: Lamb chops & green beans'],
+      ['Breakfast: MCT oil coffee & eggs','Lunch: BLT wraps','Dinner: Beef & mushroom stir-fry'],
+      ['Breakfast: Smoked salmon & cream cheese','Lunch: Greek salad with chicken','Dinner: Shrimp scampi with zucchini noodles'],
+      ['Breakfast: Egg cups with bacon','Lunch: Chicken liver pâté & veg','Dinner: Steak & buttered mushrooms']
+    ],
+    'Eat cleaner':[
+      ['Breakfast: Chia pudding & coconut cream','Lunch: BLT lettuce wraps','Dinner: Cauliflower fried rice & shrimp'],
+      ['Breakfast: Avocado & poached eggs','Lunch: Chicken & avocado salad','Dinner: Salmon with cucumber salsa'],
+      ['Breakfast: Keto smoothie','Lunch: Tuna & cucumber rolls','Dinner: Ground turkey & roasted veg'],
+      ['Breakfast: Bacon & egg muffins','Lunch: Greek salad','Dinner: Grilled swordfish & asparagus'],
+      ['Breakfast: Smoked salmon & avocado','Lunch: Egg salad in lettuce','Dinner: Lamb koftas & tzatziki salad'],
+      ['Breakfast: Coconut chia pudding','Lunch: Chicken satay lettuce cups','Dinner: Pan-fried cod & roasted greens'],
+      ['Breakfast: Cheese omelette & herbs','Lunch: Steak salad','Dinner: Pork tenderloin & cauli mash']
+    ]
+  },
+  Paleo:{
+    'Lose weight':[
+      ['Breakfast: Sweet potato hash & eggs','Lunch: Turkey & avocado lettuce wrap','Dinner: Grilled salmon & roasted veg'],
+      ['Breakfast: Banana almond pancakes','Lunch: Chicken & mango salad','Dinner: Beef stir-fry & cauliflower rice'],
+      ['Breakfast: Egg muffins & spinach','Lunch: Shrimp & avocado salad','Dinner: Baked chicken thighs & roasted veg'],
+      ['Breakfast: Coconut chia pudding','Lunch: Turkey & sweet potato bowl','Dinner: Salmon & sautéed greens'],
+      ['Breakfast: Fresh fruit & almond butter','Lunch: Chicken & veggie skewers','Dinner: Grilled fish & mango salsa'],
+      ['Breakfast: Poached eggs & avocado','Lunch: Pulled chicken lettuce cups','Dinner: Lamb cutlets & roasted beets'],
+      ['Breakfast: Smoothie with coconut milk','Lunch: Tuna & cucumber salad','Dinner: Grilled steak & sweet potato mash']
+    ],
+    'Build muscle':[
+      ['Breakfast: Eggs & smoked salmon','Lunch: Bison patty & sweet potato','Dinner: Lamb chops & roasted veg','Snack: Hard-boiled eggs & almonds'],
+      ['Breakfast: Sweet potato & egg hash','Lunch: Chicken & almond butter noodles','Dinner: Grilled steak & baked sweet potato','Snack: Coconut & cashews'],
+      ['Breakfast: Banana & egg pancakes','Lunch: Salmon & avocado salad','Dinner: Pork tenderloin & roasted squash','Snack: Beef jerky & fruit'],
+      ['Breakfast: Full egg scramble','Lunch: Turkey & veggie bowl','Dinner: Venison & sweet potato mash','Snack: Mixed nuts'],
+      ['Breakfast: Coconut yogurt & berries','Lunch: Chicken & roasted veg','Dinner: Grilled salmon & asparagus','Snack: Almond butter & apple'],
+      ['Breakfast: Avocado & poached eggs','Lunch: Beef & mushroom stew','Dinner: Duck breast & roasted root veg','Snack: Dates & almonds'],
+      ['Breakfast: Smoothie bowl','Lunch: Tuna & cucumber rolls','Dinner: Chicken & vegetable casserole','Snack: Trail mix']
+    ],
+    'Improve energy':[
+      ['Breakfast: Banana almond pancakes','Lunch: Shrimp & avocado salad','Dinner: Chicken thighs & sweet potato'],
+      ['Breakfast: Egg & veggie muffins','Lunch: Turkey & mango salad','Dinner: Salmon & roasted root veg'],
+      ['Breakfast: Coconut chia pudding','Lunch: Chicken & grape salad','Dinner: Baked cod & roasted squash'],
+      ['Breakfast: Sweet potato & egg hash','Lunch: Smoked salmon & cucumber','Dinner: Grilled beef & roasted beets'],
+      ['Breakfast: Mixed berry smoothie','Lunch: Chicken & veggie bowl','Dinner: Shrimp stir-fry with cauliflower rice'],
+      ['Breakfast: Poached eggs & avocado','Lunch: Tuna & almond salad','Dinner: Lamb stew & sweet potato'],
+      ['Breakfast: Fruit & nut bowl','Lunch: Turkey lettuce wraps','Dinner: Pan-seared salmon & greens']
+    ],
+    'Eat cleaner':[
+      ['Breakfast: Fresh fruit & almond butter','Lunch: Chicken & veggie skewers','Dinner: Grilled fish & mango salsa'],
+      ['Breakfast: Egg muffins with veg','Lunch: Turkey & avocado salad','Dinner: Beef & vegetable stew'],
+      ['Breakfast: Banana & coconut oatmeal','Lunch: Salmon & cucumber salad','Dinner: Baked chicken & roasted veg'],
+      ['Breakfast: Sweet potato hash & eggs','Lunch: Prawn & avocado lettuce cups','Dinner: Grilled steak & sautéed kale'],
+      ['Breakfast: Smoothie with almond milk','Lunch: Chicken & grape salad','Dinner: Cod & cauliflower mash'],
+      ['Breakfast: Açaí bowl with seeds','Lunch: Turkey & sweet potato bowl','Dinner: Salmon en papillote with veg'],
+      ['Breakfast: Poached eggs & avocado','Lunch: Shrimp & mango salad','Dinner: Lamb koftas & tabbouleh']
+    ]
+  }
+};
+
+function buildWeeklyMealPlan(goals,pref,mealsPerDay){
+  const prefKey=WK_MEALS[pref]?pref:'No restriction';
+  const goalList=goals.split(' + ').filter(Boolean);
+  const primaryGoal=goalList[0]||'Eat cleaner';
+  const goalKey=WK_MEALS[prefKey][primaryGoal]?primaryGoal:'Eat cleaner';
+  const dayNames=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const mealData=WK_MEALS[prefKey][goalKey];
+  return{days:dayNames.map((name,i)=>{
+    const dayMeals=mealData[i%mealData.length];
+    return{day:name,meals:dayMeals.slice(0,parseInt(mealsPerDay)||3)};
+  })};
+}
+
+function buildGroceryFromPlan(plan){
+  const allMeals=(plan.days||[]).flatMap(d=>d.meals||[]).join(' ').toLowerCase();
+  const categories={
+    Produce:[],Protein:[],Grains:[],Dairy:[],Pantry:[],Condiments:[]
+  };
+  const produce=['spinach','kale','broccoli','avocado','berries','banana','apple','mango','tomato','cucumber','lemon','lime','garlic','onion','sweet potato','zucchini','pepper','mushroom','asparagus','courgette','beetroot','ginger','cauliflower','celery','carrot','lettuce','bok choy','cabbage'];
+  const protein=['chicken','salmon','tuna','beef','turkey','shrimp','prawn','tofu','tempeh','eggs','lentil','chickpea','black bean','edamame','lamb','pork','cod','fish','seitan','paneer'];
+  const grains=['oats','quinoa','rice','pasta','bread','noodle','rye','wrap','tortilla','naan','barley','toast','bagel','waffle','pancake'];
+  const dairy=['yogurt','cheese','cream','milk','feta','halloumi','cottage cheese','mozzarella'];
+  const pantry=['almond','walnut','cashew','peanut','seed','nut','oil','coconut','tahini','hummus','chia','flaxseed','hemp','protein powder','granola','trail mix'];
+  const condiments=['salsa','soy sauce','dressing','pesto','ranch','tzatziki','guac','sriracha','vinegar','honey','mustard','mayo'];
+
+  const added=new Set();
+  function tryAdd(word,list,cat){
+    if(allMeals.includes(word)&&!added.has(word)){
+      categories[cat].push(word.charAt(0).toUpperCase()+word.slice(1));
+      added.add(word);
+    }
+  }
+  produce.forEach(w=>tryAdd(w,'produce','Produce'));
+  protein.forEach(w=>tryAdd(w,'protein','Protein'));
+  grains.forEach(w=>tryAdd(w,'grains','Grains'));
+  dairy.forEach(w=>tryAdd(w,'dairy','Dairy'));
+  pantry.forEach(w=>tryAdd(w,'pantry','Pantry'));
+  condiments.forEach(w=>tryAdd(w,'condiments','Condiments'));
+
+  return{categories:Object.entries(categories).filter(([,v])=>v.length).map(([name,items])=>({name,items}))};
+}
+
+function generateWeeklyWorkout(){
+  const style=getMulti('wk-style','Strength');
+  const selectedDays=getSelectedWorkoutDays();
   const dur=chips['wk-dur']||'45';
   const goal=getMulti('wk-goal','General fitness');
+  if(!selectedDays.length){
+    alert('Please select at least one workout day.');return;
+  }
   document.getElementById('wk-workout-loading').style.display='block';
   document.getElementById('weekly-workout-result').style.display='none';
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,
-        messages:[{role:'user',content:'Create a 7-day weekly workout plan. Style: '+style+', active '+days+' days/week, '+dur+' min sessions, goal: '+goal+'. Return ONLY valid JSON, no markdown backticks:\n{"days":[{"day":"Monday","focus":"Upper body","exercises":["Bench press 4x8","Push-ups 3x15","Cable rows 4x10"],"rest":false},{"day":"Tuesday","focus":"Rest","exercises":[],"rest":true}]} — include all 7 days.'}]
-      })
-    });
-    const data=await resp.json();
-    const text=data.content.map(c=>c.text||'').join('');
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-    S.weeklyWorkoutPlan=parsed;saveStateLS(S);
-    renderWeeklyWorkout(parsed);
-  }catch(e){
-    document.getElementById('weekly-workout-result').innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0;">Could not generate plan. Please try again.</p>';
-    document.getElementById('weekly-workout-result').style.display='block';
-  }finally{document.getElementById('wk-workout-loading').style.display='none';}
+  setTimeout(()=>{
+    try{
+      const plan=buildWeeklyWorkoutPlan(style,goal,selectedDays,dur);
+      S.weeklyWorkoutPlan=plan;saveStateLS(S);
+      renderWeeklyWorkout(plan);
+    }catch(e){
+      document.getElementById('weekly-workout-result').innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0;">Could not generate plan. Please try again.</p>';
+      document.getElementById('weekly-workout-result').style.display='block';
+    }finally{document.getElementById('wk-workout-loading').style.display='none';}
+  },300);
+}
+
+function generateWeeklyMeal(){
+  const goal=getMulti('wk-mgoal','Eat cleaner');
+  const pref=chips['wk-mpref']||'No restriction';
+  const meals=chips['wk-mmeals']||'3';
+  document.getElementById('wk-meal-loading').style.display='block';
+  document.getElementById('weekly-meal-result').style.display='none';
+  setTimeout(()=>{
+    try{
+      const plan=buildWeeklyMealPlan(goal,pref,meals);
+      S.weeklyMealPlan=plan;
+      S.groceryList=null;
+      document.getElementById('grocery-list').innerHTML='';
+      saveStateLS(S);
+      renderWeeklyMeal(plan);
+    }catch(e){
+      document.getElementById('weekly-meal-result').innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0;">Could not generate plan. Please try again.</p>';
+      document.getElementById('weekly-meal-result').style.display='block';
+    }finally{document.getElementById('wk-meal-loading').style.display='none';}
+  },300);
+}
+
+function buildGroceryList(){
+  if(!S.weeklyMealPlan)return;
+  document.getElementById('grocery-loading').style.display='block';
+  document.getElementById('grocery-empty').style.display='none';
+  document.getElementById('grocery-content').style.display='none';
+  setTimeout(()=>{
+    try{
+      const data=buildGroceryFromPlan(S.weeklyMealPlan);
+      S.groceryList=data;saveStateLS(S);
+      renderGroceryList(data);
+    }catch(e){
+      document.getElementById('grocery-empty').style.display='block';
+    }finally{document.getElementById('grocery-loading').style.display='none';}
+  },300);
 }
 
 function renderWeeklyWorkout(plan){
@@ -1452,33 +1843,6 @@ function renderWeeklyWorkout(plan){
   container.style.display='block';
 }
 
-async function generateWeeklyMeal(){
-  const goal=getMulti('wk-mgoal','Eat cleaner');
-  const pref=chips['wk-mpref']||'No restriction';
-  const meals=chips['wk-mmeals']||'3';
-  document.getElementById('wk-meal-loading').style.display='block';
-  document.getElementById('weekly-meal-result').style.display='none';
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,
-        messages:[{role:'user',content:'Create a 7-day meal plan. Goal: '+goal+', dietary preference: '+pref+', '+meals+' meals per day. Vary meals across the week. Return ONLY valid JSON, no markdown:\n{"days":[{"day":"Monday","meals":["Breakfast: oats with berries and almond milk","Lunch: grilled chicken salad","Dinner: baked salmon with roasted veg"]},{"day":"Tuesday",...},...all 7 days]}'}]
-      })
-    });
-    const data=await resp.json();
-    const text=data.content.map(c=>c.text||'').join('');
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-    S.weeklyMealPlan=parsed;
-    S.groceryList=null;
-    document.getElementById('grocery-list').innerHTML='';
-    saveStateLS(S);
-    renderWeeklyMeal(parsed);
-  }catch(e){
-    document.getElementById('weekly-meal-result').innerHTML='<p style="color:var(--muted);font-size:13px;padding:10px 0;">Could not generate plan. Please try again.</p>';
-    document.getElementById('weekly-meal-result').style.display='block';
-  }finally{document.getElementById('wk-meal-loading').style.display='none';}
-}
-
 function renderWeeklyMeal(plan){
   const container=document.getElementById('weekly-meal-result');
   container.innerHTML='';
@@ -1494,31 +1858,6 @@ function renderWeeklyMeal(plan){
   note.onclick=()=>switchMealTab('grocery');
   container.appendChild(note);
   container.style.display='block';
-}
-
-async function buildGroceryList(){
-  if(!S.weeklyMealPlan)return;
-  document.getElementById('grocery-loading').style.display='block';
-  document.getElementById('grocery-empty').style.display='none';
-  document.getElementById('grocery-content').style.display='none';
-  try{
-    const mealSummary=(S.weeklyMealPlan.days||[]).map(d=>d.day+': '+(d.meals||[]).join(', ')).join('\n');
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
-        messages:[{role:'user',content:'Based on this 7-day meal plan, generate a complete grocery list organized by store section. Consolidate repeated ingredients. Return ONLY valid JSON:\n'+mealSummary+'\n\nFormat: {"categories":[{"name":"Produce","items":["Spinach (2 bags)","Bananas (6)","Cherry tomatoes"]},{"name":"Protein","items":["Chicken breast (3 lbs)","Salmon fillets (1 lb)","Eggs (1 dozen)"]},{"name":"Grains & Bread","items":["Brown rice (2 cups)","Rolled oats","Whole grain bread"]},{"name":"Dairy & Alternatives","items":["Greek yogurt (32 oz)","Almond milk","Feta cheese"]},{"name":"Pantry & Condiments","items":["Olive oil","Honey","Almonds","Soy sauce"]},{"name":"Frozen","items":["Frozen berries","Edamame"]}]}'}]
-      })
-    });
-    const data=await resp.json();
-    const text=data.content.map(c=>c.text||'').join('');
-    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-    S.groceryList=parsed;saveStateLS(S);
-    renderGroceryList(parsed);
-  }catch(e){
-    document.getElementById('grocery-empty').style.display='block';
-    const p=document.getElementById('grocery-empty').querySelector('p');
-    if(p)p.textContent='Could not generate grocery list. Please try again.';
-  }finally{document.getElementById('grocery-loading').style.display='none';}
 }
 
 function renderGroceryList(data){
