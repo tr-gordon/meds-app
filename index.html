@@ -542,6 +542,29 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
         </div>
       </div>
       <button class="edit-profile-btn" onclick="reopenOnboarding()">Edit profile &amp; settings</button>
+      <div class="profile-section" style="margin-top:16px;">
+        <p class="profile-section-title">AI photo analysis</p>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+          <p style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:12px;">Choose your AI provider for food photo analysis. Keys are stored only on your device.</p>
+          <p class="field-lbl" style="margin-top:0;">Provider</p>
+          <div style="display:flex;gap:6px;margin-bottom:12px;" id="provider-chips-profile">
+            <div class="chip" id="ppchip-anthropic" onclick="selectProvider('anthropic');renderProfileApiKey();">Claude</div>
+            <div class="chip" id="ppchip-openai" onclick="selectProvider('openai');renderProfileApiKey();">OpenAI</div>
+            <div class="chip" id="ppchip-gemini" onclick="selectProvider('gemini');renderProfileApiKey();">Gemini</div>
+          </div>
+          <div id="profile-api-set" style="display:none;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <p style="font-size:12px;color:var(--e);" id="profile-api-set-label">Key saved ✓</p>
+              <button onclick="removeApiKey();renderProfileApiKey();renderApiKeyState();" style="font-size:11px;color:#e85a4a;background:none;border:none;cursor:pointer;">Remove</button>
+            </div>
+          </div>
+          <div id="profile-api-input">
+            <p style="font-size:11px;color:var(--muted);margin-bottom:7px;" id="profile-provider-hint">Anthropic Claude — get key at console.anthropic.com</p>
+            <input type="password" id="profile-api-key-input" placeholder="Paste your API key..." style="margin-bottom:8px;font-size:13px;">
+            <button class="btn-primary" style="border-color:var(--e);background:var(--e-bg);color:var(--e);" onclick="saveApiKeyFromProfile()">Save API key</button>
+          </div>
+        </div>
+      </div>
       <button class="reset-btn" onclick="resetApp()">Reset all data</button>
     </div>
 
@@ -762,6 +785,24 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 
       <!-- PHOTO LOG TAB -->
       <div id="diet-tab-photo" style="display:none;">
+        <!-- API KEY PROMPT -->
+        <div id="api-key-prompt" style="display:none;background:var(--bg3);border:1px solid var(--d);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
+          <p style="font-size:12px;font-weight:500;color:var(--d-acc);margin-bottom:10px;">Choose AI provider for photo analysis</p>
+          <div style="display:flex;gap:6px;margin-bottom:12px;" id="provider-chips-prompt">
+            <div class="chip sel-d" id="pchip-anthropic" onclick="selectProvider('anthropic')">Claude</div>
+            <div class="chip" id="pchip-openai" onclick="selectProvider('openai')">OpenAI</div>
+            <div class="chip" id="pchip-gemini" onclick="selectProvider('gemini')">Gemini</div>
+          </div>
+          <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px;" id="provider-hint-prompt">Anthropic Claude — get key at console.anthropic.com</p>
+          <input type="password" id="api-key-input" placeholder="Paste your API key..." style="margin-bottom:8px;font-size:13px;">
+          <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);" onclick="saveApiKey()">Save & continue</button>
+        </div>
+        <div id="api-key-set" style="display:none;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 13px;border:1px solid var(--border);">
+            <p style="font-size:12px;color:var(--muted);" id="api-key-set-label">API key saved on device</p>
+            <button onclick="removeApiKey()" style="font-size:11px;color:#e85a4a;background:none;border:none;cursor:pointer;">Remove</button>
+          </div>
+        </div>
         <p class="field-lbl">What meal is this?</p>
         <div class="chip-row" style="margin-bottom:12px;">
           <div class="chip" onclick="selChip(this,'mealtime','Breakfast','d')">Breakfast</div>
@@ -771,7 +812,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
         </div>
         <p class="field-lbl">Photo</p>
         <input type="file" id="food-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFoodPhoto(this)">
-        <div class="photo-zone" onclick="document.getElementById('food-file-input').click()">
+        <div class="photo-zone" onclick="handlePhotoTap()">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="3" stroke="var(--muted)" stroke-width="1.5"/><circle cx="14" cy="15" r="4.5" stroke="var(--d)" stroke-width="1.5"/><path d="M10 6l1.5-2.5h5L18 6" stroke="var(--muted)" stroke-width="1.5" stroke-linejoin="round"/></svg>
           <p>Tap to take a photo or choose from library</p>
         </div>
@@ -968,6 +1009,23 @@ function applyProfile(){
   renderProfile();
 }
 
+function renderProfileApiKey(){
+  const key=getApiKey();
+  const setEl=document.getElementById('profile-api-set');
+  const inputEl=document.getElementById('profile-api-input');
+  const lbl=document.getElementById('profile-api-set-label');
+  if(setEl)setEl.style.display=key?'block':'none';
+  if(inputEl)inputEl.style.display=key?'none':'block';
+  if(lbl&&key)lbl.textContent=(PROVIDERS[selectedProvider]||{name:'AI'}).name+' key saved ✓';
+  selectProvider(selectedProvider);
+}
+function saveApiKeyFromProfile(){
+  const key=document.getElementById('profile-api-key-input').value.trim();
+  if(!key){alert('Please paste your API key.');return;}
+  try{localStorage.setItem('meds-api-key-'+selectedProvider,key);}catch(e){}
+  renderProfileApiKey();renderApiKeyState();
+}
+
 function renderProfile(){
   const p=S.profile;if(!p)return;
   document.getElementById('p-name').textContent=p.name||'–';
@@ -981,6 +1039,7 @@ function renderProfile(){
   document.getElementById('p-tgt-s').textContent=t.s+' hrs';
   const w=p.weights||{m:1,e:1,d:1,s:1};
   ['m','e','d','s'].forEach(k=>document.getElementById('p-w-'+k).textContent=w[k]+'×');
+  renderProfileApiKey();
 }
 
 function resetApp(){
@@ -1377,7 +1436,7 @@ function switchDietTab(tab){
   document.getElementById('save-d-btn').style.display='none';
   document.getElementById('dtab-plan').classList.toggle('active',tab==='plan');
   document.getElementById('dtab-photo').classList.toggle('active',tab==='photo');
-  if(tab==='photo')renderPhotoLog();
+  if(tab==='photo')renderPhotoLog();renderApiKeyState();
 }
 
 function switchExTab(tab){
@@ -1906,42 +1965,111 @@ function handleFoodPhoto(input){
   reader.readAsDataURL(file);
 }
 
+const PROVIDERS={
+  anthropic:{name:'Claude (Anthropic)',hint:'Get key at console.anthropic.com',placeholder:'sk-ant-...'},
+  openai:{name:'GPT-4o (OpenAI)',hint:'Get key at platform.openai.com/api-keys',placeholder:'sk-...'},
+  gemini:{name:'Gemini (Google)',hint:'Get key at aistudio.google.com/app/apikey',placeholder:'AIza...'}
+};
+let selectedProvider=localStorage.getItem('meds-ai-provider')||'anthropic';
+
+function selectProvider(p){
+  selectedProvider=p;
+  try{localStorage.setItem('meds-ai-provider',p);}catch(e){}
+  ['anthropic','openai','gemini'].forEach(id=>{
+    const c1=document.getElementById('pchip-'+id);
+    const c2=document.getElementById('ppchip-'+id);
+    if(c1)c1.className='chip'+(id===p?' sel-d':'');
+    if(c2)c2.className='chip'+(id===p?' sel-d':'');
+  });
+  const info=PROVIDERS[p];
+  const hint1=document.getElementById('provider-hint-prompt');
+  const hint2=document.getElementById('profile-provider-hint');
+  const inp1=document.getElementById('api-key-input');
+  const inp2=document.getElementById('profile-api-key-input');
+  if(hint1)hint1.textContent=info.name+' — '+info.hint;
+  if(hint2)hint2.textContent=info.name+' — '+info.hint;
+  if(inp1)inp1.placeholder=info.placeholder;
+  if(inp2)inp2.placeholder=info.placeholder;
+}
+
+function getApiKey(){try{return localStorage.getItem('meds-api-key-'+selectedProvider)||'';}catch(e){return '';}}
+
+function saveApiKey(){
+  const key=document.getElementById('api-key-input').value.trim();
+  if(!key){alert('Please paste your API key.');return;}
+  try{localStorage.setItem('meds-api-key-'+selectedProvider,key);}catch(e){}
+  renderApiKeyState();
+}
+function removeApiKey(){
+  if(!confirm('Remove '+PROVIDERS[selectedProvider].name+' key?'))return;
+  try{localStorage.removeItem('meds-api-key-'+selectedProvider);}catch(e){}
+  renderApiKeyState();renderProfileApiKey();
+}
+function renderApiKeyState(){
+  const key=getApiKey();
+  const prompt=document.getElementById('api-key-prompt');
+  const set=document.getElementById('api-key-set');
+  const lbl=document.getElementById('api-key-set-label');
+  if(prompt)prompt.style.display=key?'none':'block';
+  if(set)set.style.display=key?'block':'none';
+  if(lbl&&key)lbl.textContent=PROVIDERS[selectedProvider].name+' key saved \u2713';
+}
+function handlePhotoTap(){
+  if(!getApiKey()){
+    document.getElementById('api-key-prompt').scrollIntoView({behavior:'smooth'});
+    document.getElementById('api-key-input').focus();return;
+  }
+  document.getElementById('food-file-input').click();
+}
+
+async function callVisionAPI(base64,prompt){
+  const key=getApiKey();
+  if(!key)throw new Error('no-key');
+  if(selectedProvider==='anthropic'){
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},{type:'text',text:prompt}]}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message||'Anthropic error');
+    return d.content.map(c=>c.text||'').join('');
+  }
+  if(selectedProvider==='openai'){
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model:'gpt-4o',max_tokens:1000,messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:image/jpeg;base64,'+base64}},{type:'text',text:prompt}]}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message||'OpenAI error');
+    return d.choices[0].message.content;
+  }
+  if(selectedProvider==='gemini'){
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key='+key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:base64}},{text:prompt}]}]})});
+    const d=await r.json();if(d.error)throw new Error(d.error.message||'Gemini error');
+    return d.candidates[0].content.parts[0].text;
+  }
+  throw new Error('Unknown provider');
+}
+
 async function analyzeFoodPhoto(base64){
   document.getElementById('food-loading').style.display='block';
   document.getElementById('food-result').style.display='none';
   const mealtime=chips['mealtime']||'Meal';
+  if(!getApiKey()){
+    document.getElementById('food-result-name').textContent='API key needed';
+    document.getElementById('food-result-desc').textContent='Please add your '+PROVIDERS[selectedProvider].name+' key above.';
+    document.getElementById('food-result').style.display='block';
+    document.getElementById('food-loading').style.display='none';return;
+  }
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{
-          role:'user',
-          content:[
-            {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
-            {type:'text',text:'Analyze this food photo. Respond ONLY with a JSON object, no markdown, no backticks. Format:\n{"name":"dish name","description":"2 sentence description of what this is","calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"ingredients":["ingredient 1","ingredient 2","ingredient 3"],"nutrition_notes":"one sentence about nutritional quality"}'}
-          ]
-        }]
-      })
-    });
-    const data=await resp.json();
-    const text=data.content.map(c=>c.text||'').join('');
-    const clean=text.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(clean);
-    currentFoodResult={...parsed,mealtime,timestamp:Date.now()};
-    document.getElementById('food-result-name').textContent=(mealtime+' — '+parsed.name);
+    const prompt='Analyze this food photo. Respond ONLY with a JSON object, no markdown, no backticks. Format:\n{"name":"dish name","description":"2 sentence description","calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"ingredients":["ingredient 1","ingredient 2","ingredient 3"],"nutrition_notes":"one sentence about nutritional quality"}';
+    const text=await callVisionAPI(base64,prompt);
+    const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+    currentFoodResult={...parsed,mealtime,timestamp:Date.now(),provider:selectedProvider};
+    document.getElementById('food-result-name').textContent=mealtime+' — '+parsed.name;
     document.getElementById('food-result-desc').textContent=parsed.description+(parsed.nutrition_notes?' '+parsed.nutrition_notes:'');
     document.getElementById('macro-cal').textContent=Math.round(parsed.calories||0);
     document.getElementById('macro-pro').textContent=Math.round(parsed.protein_g||0)+'g';
     document.getElementById('macro-carb').textContent=Math.round(parsed.carbs_g||0)+'g';
     document.getElementById('macro-fat').textContent=Math.round(parsed.fat_g||0)+'g';
-    document.getElementById('food-ingr').textContent=(parsed.ingredients||[]).map((i,n)=>'· '+i).join('\n');
+    document.getElementById('food-ingr').textContent=(parsed.ingredients||[]).map(i=>'· '+i).join('\n');
     document.getElementById('food-result').style.display='block';
   }catch(err){
+    const isKey=err.message&&(err.message.includes('auth')||err.message.includes('key')||err.message.includes('API key'));
     document.getElementById('food-result-name').textContent='Analysis failed';
-    document.getElementById('food-result-desc').textContent='Could not analyze image. Please try again with a clearer photo.';
+    document.getElementById('food-result-desc').textContent=isKey?'Invalid API key — please check your '+PROVIDERS[selectedProvider].name+' key.':'Could not analyze image. Please try again with a clearer photo.';
     document.getElementById('food-result').style.display='block';
   }finally{
     document.getElementById('food-loading').style.display='none';
