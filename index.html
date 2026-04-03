@@ -1293,10 +1293,18 @@ function renderCard(k){
   else if(k==='e'){sub.textContent=done?(d.edur?d.edur+' min'+(d.wtype?' · '+d.wtype:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.e||0,30)+'%';}
   else if(k==='d'){
     const FULL_DAYS_D=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-    const tE=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(dy=>dy.day===FULL_DAYS_D[new Date().getDay()]):null;
-    const mc=tE?(tE.meals||[]).length:parseInt(d.dmeals)||0;
-    sub.textContent=done?(mc+' meals planned'+(S.details.dgoal?' · '+S.details.dgoal:'')):'Tap to log';
-    pb.style.width=done?'100%':pct(S.logs.d||0,getTgt('d'))+'%';
+    const todayD=FULL_DAYS_D[new Date().getDay()];
+    const tE=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(dy=>dy.day===todayD):null;
+    const total=tE?(tE.meals||[]).length:parseInt(d.dmeals)||0;
+    const checkedArr=d.mealsChecked&&d.mealsChecked[todayD]||[];
+    const numChecked=checkedArr.filter(Boolean).length;
+    if(done){
+      sub.textContent=numChecked>0?numChecked+' of '+total+' meals eaten':total+' meals planned';
+      pb.style.width=total>0?Math.round((numChecked/total)*100)+'%':'100%';
+    }else{
+      sub.textContent='Tap to log';
+      pb.style.width='0%';
+    }
   }
   else if(k==='s'){sub.textContent=done?(d.shrs?d.shrs+' hrs'+(d.squal?' · '+d.squal:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.s||0,7)+'%';}
 }
@@ -1456,13 +1464,11 @@ function saveD(){
   const todayFull=FULL_DAYS[new Date().getDay()];
   const todayEntry=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(d=>d.day===todayFull):null;
   const mealCount=todayEntry?(todayEntry.meals||[]).length:3;
-  const goal=(S.weeklyMealPlan&&chips['wk-mgoal'])||'';
-  const pref=(S.weeklyMealPlan&&chips['wk-mpref'])||'';
+  const checked=S.details.mealsChecked&&S.details.mealsChecked[todayFull]||[];
+  const checkedCount=checked.filter(Boolean).length;
   S.checked.d=true;
-  S.logs.d=mealCount;
+  S.logs.d=checkedCount||mealCount;
   S.details.dmeals=String(mealCount);
-  S.details.dgoal=goal;
-  S.details.dpref=pref;
   if(Object.values(S.checked).every(Boolean))S.score=computeScore();
   persistToday();renderAll();closeModal('d');
 }
@@ -1548,27 +1554,64 @@ function loadTodayMeal(){
     noPlan.style.display='block';fromPlan.style.display='none';
     saveBtn.style.display='none';return;
   }
-  const DAYS_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const FULL_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const todayFull=FULL_DAYS[new Date().getDay()];
-  const todayEntry=(S.weeklyMealPlan.days||[]).find(d=>d.day===todayFull);
+  const dayIdx=(S.weeklyMealPlan.days||[]).findIndex(d=>d.day===todayFull);
+  const todayEntry=dayIdx>=0?S.weeklyMealPlan.days[dayIdx]:null;
   noPlan.style.display='none';
   fromPlan.style.display='block';
   document.getElementById('diet-today-day-lbl').textContent=todayFull+(todayEntry?'':' — no plan found');
   const list=document.getElementById('diet-today-plan-list');
   list.innerHTML='';
+
+  // mealsChecked is a per-day array of booleans stored in S.details
+  if(!S.details.mealsChecked)S.details.mealsChecked={};
+  if(!S.details.mealsChecked[todayFull])S.details.mealsChecked[todayFull]=[];
+  const checked=S.details.mealsChecked[todayFull];
+
+  function saveMealChecks(){
+    // Count how many are checked
+    const numChecked=checked.filter(Boolean).length;
+    const total=todayEntry?(todayEntry.meals||[]).length:0;
+    S.details.dmeals=String(total);
+    S.logs.d=numChecked;
+    // Mark diet pillar done when at least one meal is checked
+    if(numChecked>0){
+      S.checked.d=true;
+      if(Object.values(S.checked).every(Boolean))S.score=computeScore();
+    } else {
+      S.checked.d=false;
+      S.score=null;
+    }
+    persistToday();
+    renderAll();
+    const sb=document.getElementById('save-d-btn');
+    if(sb)sb.textContent='Update meal log';
+  }
+
   if(todayEntry&&todayEntry.meals){
-    const dayIdx=(S.weeklyMealPlan.days||[]).findIndex(d=>d.day===todayFull);
     todayEntry.meals.forEach((meal,i)=>{
+      const isDone=!!checked[i];
       const row=document.createElement('div');row.className='routine-item';
       row.style.cssText='padding:8px 0;';
+
       const chk=document.createElement('div');
-      chk.className='rchk';
-      chk.onclick=function(){this.classList.toggle('done');this.querySelector('.rchk-in').style.display=this.classList.contains('done')?'block':'none';};
-      chk.innerHTML='<div class="rchk-in"></div>';
+      chk.className='rchk'+(isDone?' done':'');
+      const chkIn=document.createElement('div');
+      chkIn.className='rchk-in';
+      chkIn.style.display=isDone?'block':'none';
+      chk.appendChild(chkIn);
+      chk.addEventListener('click',()=>{
+        const nowDone=chk.classList.toggle('done');
+        chkIn.style.display=nowDone?'block':'none';
+        checked[i]=nowDone;
+        S.details.mealsChecked[todayFull]=checked;
+        saveMealChecks();
+      });
+
       const span=document.createElement('span');
       span.className='routine-text';
-      span.style.fontSize='13px';
+      span.style.cssText='font-size:13px;'+(isDone?'text-decoration:line-through;color:var(--muted);':'');
       span.contentEditable='true';
       span.textContent=meal;
       span.addEventListener('blur',()=>{
@@ -1578,6 +1621,7 @@ function loadTodayMeal(){
           saveStateLS(S);
         }
       });
+
       row.appendChild(chk);
       row.appendChild(span);
       list.appendChild(row);
