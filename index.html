@@ -904,7 +904,35 @@ let chips={};
 let multiChips={};
 
 function loadState(){try{return JSON.parse(localStorage.getItem('meds-pwa')||'null');}catch(e){return null;}}
-function saveStateLS(s){try{localStorage.setItem('meds-pwa',JSON.stringify(s));}catch(e){}}
+function saveStateLS(s){
+  try{
+    // Always strip any stray imgBase64 from photoLog before saving
+    const clean=JSON.parse(JSON.stringify(s));
+    if(clean.details&&clean.details.photoLog){
+      clean.details.photoLog=clean.details.photoLog.map(p=>{const {imgBase64,...rest}=p;return rest;});
+    }
+    if(clean.history){
+      clean.history=clean.history.map(h=>{
+        if(h.details&&h.details.photoLog){
+          return {...h,details:{...h.details,photoLog:h.details.photoLog.map(p=>{const {imgBase64,...rest}=p;return rest;})}};
+        }
+        return h;
+      });
+    }
+    localStorage.setItem('meds-pwa',JSON.stringify(clean));
+  }catch(e){
+    if(e.name==='QuotaExceededError'||e.code===22){
+      try{
+        // Last resort: strip all photo logs and weekly plans from history
+        const slim=JSON.parse(JSON.stringify(s));
+        slim.history=(slim.history||[]).map(h=>({...h,details:{...h.details,photoLog:[],weeklyMealPlan:undefined,groceryList:undefined}}));
+        slim.weeklyMealPlan=s.weeklyMealPlan;
+        slim.groceryList=s.groceryList;
+        localStorage.setItem('meds-pwa',JSON.stringify(slim));
+      }catch(e2){console.warn('Storage full even after stripping');}
+    }
+  }
+}
 
 let S=loadState()||{checked:{m:false,e:false,d:false,s:false},logs:{m:0,e:0,d:0,s:0},details:{},history:[],streak:0,lastDate:null,score:null,profile:null};
 
@@ -1199,9 +1227,18 @@ function openHistoryModal(date){
       if(k==='d'){
         if(d.photoLog&&d.photoLog.length){
           const cals=Math.round(d.photoLog.reduce((a,e)=>a+(e.calories||0),0));
-          html+='<div style="font-size:11px;color:var(--muted);">'+d.photoLog.length+' meals logged · '+cals+' cal total</div>';
+          html+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+d.photoLog.length+' meals · '+cals+' cal total</div>';
+          d.photoLog.forEach(meal=>{
+            html+='<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;margin-top:5px;">';
+            html+='<div style="font-size:12px;font-weight:500;color:var(--d-acc);">'+(meal.mealtime||'Meal')+' — '+(meal.name||'Food')+'</div>';
+            html+='<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+Math.round(meal.calories||0)+' cal · '+Math.round(meal.protein_g||0)+'g protein · '+Math.round(meal.carbs_g||0)+'g carbs · '+Math.round(meal.fat_g||0)+'g fat</div>';
+            if(meal.ingredients&&meal.ingredients.length){html+='<div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;">'+meal.ingredients.slice(0,4).join(', ')+(meal.ingredients.length>4?'…':'')+'</div>';}
+            html+='</div>';
+          });
         } else if(d.dgoal){
           html+='<div style="font-size:11px;color:var(--muted);">'+(d.dmeals||'?')+' meals · '+(d.dgoal||'')+(d.dpref&&d.dpref!=='No restriction'?' · '+d.dpref:'')+'</div>';
+        } else if(d.dmeals){
+          html+='<div style="font-size:11px;color:var(--muted);">'+d.dmeals+' meals logged</div>';
         }
       }
       if(k==='s'&&d.shrs)html+='<div style="font-size:11px;color:var(--muted);">'+d.shrs+' hrs'+(d.squal?' · '+d.squal:'')+(d.sbed?' · Bed '+d.sbed:'')+(d.sleepNotes?'<br><em>'+d.sleepNotes+'</em>':'')+'</div>';
@@ -2076,16 +2113,101 @@ async function analyzeFoodPhoto(base64){
   }
 }
 
+function savePhotoLog(){
+  try{
+    const today=todayStr();
+    const log=(S.details.photoLog||[]).map(p=>{const {imgBase64,...rest}=p;return rest;});
+    localStorage.setItem('meds-photolog-'+today,JSON.stringify(log));
+  }catch(e){}
+}
+
+function loadPhotoLog(){
+  try{
+    const today=todayStr();
+    const stored=localStorage.getItem('meds-photolog-'+today);
+    if(stored){
+      const log=JSON.parse(stored);
+      if(log&&log.length){
+        S.details.photoLog=log;
+        S.checked.d=true;
+        S.logs.d=log.length;
+        S.details.dmeals=String(log.length);
+        S.details.totalCalories=Math.round(log.reduce((a,e)=>a+(e.calories||0),0));
+      }
+    }
+    // Clean up old photo log keys — but first save analysis results into history
+    const keys=Object.keys(localStorage).filter(k=>k.startsWith('meds-photolog-'));
+    const cutoff=new Date(Date.now()-7*86400000).toISOString().split('T')[0];
+    let historyChanged=false;
+    keys.forEach(k=>{
+      const date=k.replace('meds-photolog-','');
+      if(date<cutoff){
+        try{
+          const oldLog=JSON.parse(localStorage.getItem(k)||'[]');
+          if(oldLog&&oldLog.length){
+            // Merge analysis results into the history entry for that date
+            const hIdx=S.history.findIndex(h=>h.date===date);
+            if(hIdx>=0){
+              const existing=S.history[hIdx].details&&S.history[hIdx].details.photoLog;
+              if(!existing||!existing.length){
+                S.history[hIdx]={
+                  ...S.history[hIdx],
+                  details:{
+                    ...S.history[hIdx].details,
+                    photoLog:oldLog,
+                    totalCalories:Math.round(oldLog.reduce((a,e)=>a+(e.calories||0),0))
+                  }
+                };
+                historyChanged=true;
+              }
+            } else {
+              // No history entry for this date — create a minimal one to preserve the data
+              S.history.push({
+                date,
+                checked:{m:false,e:false,d:true,s:false},
+                logs:{m:0,e:0,d:oldLog.length,s:0},
+                details:{
+                  photoLog:oldLog,
+                  dmeals:String(oldLog.length),
+                  totalCalories:Math.round(oldLog.reduce((a,e)=>a+(e.calories||0),0))
+                },
+                score:null
+              });
+              historyChanged=true;
+            }
+          }
+        }catch(e2){}
+        localStorage.removeItem(k);
+      }
+    });
+    if(historyChanged)saveStateLS(S);
+  }catch(e){}
+}
+
 function logFoodPhoto(){
   if(!currentFoodResult)return;
   if(!S.details.photoLog)S.details.photoLog=[];
-  S.details.photoLog.push({...currentFoodResult,imgBase64:currentFoodBase64});
+  const entry={
+    name:currentFoodResult.name,
+    description:currentFoodResult.description,
+    mealtime:currentFoodResult.mealtime,
+    calories:currentFoodResult.calories,
+    protein_g:currentFoodResult.protein_g,
+    carbs_g:currentFoodResult.carbs_g,
+    fat_g:currentFoodResult.fat_g,
+    ingredients:currentFoodResult.ingredients,
+    nutrition_notes:currentFoodResult.nutrition_notes,
+    provider:currentFoodResult.provider,
+    timestamp:currentFoodResult.timestamp
+  };
+  S.details.photoLog.push(entry);
   S.checked.d=true;
   const totalCals=S.details.photoLog.reduce((a,e)=>a+(e.calories||0),0);
   S.logs.d=S.details.photoLog.length;
   S.details.dmeals=String(S.details.photoLog.length);
   S.details.totalCalories=Math.round(totalCals);
   if(Object.values(S.checked).every(Boolean))S.score=computeScore();
+  savePhotoLog();
   persistToday();renderAll();
   currentFoodResult=null;currentFoodBase64=null;
   document.getElementById('food-preview').style.display='none';
@@ -2094,17 +2216,44 @@ function logFoodPhoto(){
   renderPhotoLog();
 }
 
+function mealEmoji(mealtime){
+  const m=(mealtime||'').toLowerCase();
+  if(m.includes('breakfast'))return '🌅';
+  if(m.includes('lunch'))return '☀️';
+  if(m.includes('dinner'))return '🌙';
+  if(m.includes('snack'))return '🍎';
+  return '🍽️';
+}
+
 function renderPhotoLog(){
   const list=document.getElementById('photo-log-list');
   const log=(S.details.photoLog||[]);
   if(!log.length){list.innerHTML='';return;}
   const totalCals=Math.round(log.reduce((a,e)=>a+(e.calories||0),0));
   list.innerHTML='<p class="field-lbl" style="margin-bottom:8px;">Today\'s logged meals · '+totalCals+' cal total</p>';
-  log.forEach(entry=>{
+  log.forEach((entry,idx)=>{
     const item=document.createElement('div');item.className='photo-log-item';
-    item.innerHTML=(entry.imgBase64?'<img class="photo-log-thumb" src="data:image/jpeg;base64,'+entry.imgBase64+'">':'<div class="photo-log-thumb" style="background:var(--d-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px;">&#9679;</div>')+'<div class="photo-log-info"><div class="photo-log-name">'+(entry.mealtime||'Meal')+' — '+( entry.name||'Food')+'</div><div class="photo-log-cals">'+Math.round(entry.calories||0)+' cal · '+Math.round(entry.protein_g||0)+'g protein · '+Math.round(entry.carbs_g||0)+'g carbs · '+Math.round(entry.fat_g||0)+'g fat</div></div>';
+    item.innerHTML=
+      '<div class="photo-log-thumb" style="background:var(--d-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;">'+mealEmoji(entry.mealtime)+'</div>'+
+      '<div class="photo-log-info">'+
+        '<div class="photo-log-name">'+(entry.mealtime||'Meal')+' — '+(entry.name||'Food')+'</div>'+
+        '<div class="photo-log-cals">'+Math.round(entry.calories||0)+' cal · '+Math.round(entry.protein_g||0)+'g P · '+Math.round(entry.carbs_g||0)+'g C · '+Math.round(entry.fat_g||0)+'g F</div>'+
+      '</div>'+
+      '<button onclick="deletePhotoEntry('+idx+')" style="background:none;border:none;color:#e85a4a;font-size:16px;cursor:pointer;padding:0 4px;flex-shrink:0;">×</button>';
     list.appendChild(item);
   });
+}
+
+function deletePhotoEntry(idx){
+  if(!S.details.photoLog)return;
+  S.details.photoLog.splice(idx,1);
+  const totalCals=S.details.photoLog.reduce((a,e)=>a+(e.calories||0),0);
+  S.logs.d=S.details.photoLog.length;
+  S.details.dmeals=String(S.details.photoLog.length);
+  S.details.totalCalories=Math.round(totalCals);
+  if(!S.details.photoLog.length)S.checked.d=false;
+  savePhotoLog();
+  persistToday();renderAll();renderPhotoLog();
 }
 
 const SLEEP_TIPS={
@@ -2204,6 +2353,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('date-lbl').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const todayEntry=S.history.find(h=>h.date===todayStr());
   if(todayEntry){S.checked={...todayEntry.checked};S.logs={...todayEntry.logs};S.details={...todayEntry.details};S.score=todayEntry.score||null;}
+  // Always load photo log from its own key — more reliable than history for large data
+  loadPhotoLog();
   if(!S.profile||!S.profile.onboarded){
     document.getElementById('onboard').style.display='flex';
     document.getElementById('main-app').style.display='none';
