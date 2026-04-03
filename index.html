@@ -1558,10 +1558,28 @@ function loadTodayMeal(){
   const list=document.getElementById('diet-today-plan-list');
   list.innerHTML='';
   if(todayEntry&&todayEntry.meals){
+    const dayIdx=(S.weeklyMealPlan.days||[]).findIndex(d=>d.day===todayFull);
     todayEntry.meals.forEach((meal,i)=>{
       const row=document.createElement('div');row.className='routine-item';
       row.style.cssText='padding:8px 0;';
-      row.innerHTML='<div class="rchk" onclick="this.classList.toggle(\'done\');this.querySelector(\'.rchk-in\').style.display=this.classList.contains(\'done\')?\'block\':\'none\'"><div class="rchk-in"></div></div><span class="routine-text" style="font-size:13px;" contenteditable="true">'+meal+'</span>';
+      const chk=document.createElement('div');
+      chk.className='rchk';
+      chk.onclick=function(){this.classList.toggle('done');this.querySelector('.rchk-in').style.display=this.classList.contains('done')?'block':'none';};
+      chk.innerHTML='<div class="rchk-in"></div>';
+      const span=document.createElement('span');
+      span.className='routine-text';
+      span.style.fontSize='13px';
+      span.contentEditable='true';
+      span.textContent=meal;
+      span.addEventListener('blur',()=>{
+        const newVal=span.textContent.trim()||meal;
+        if(S.weeklyMealPlan&&dayIdx>=0){
+          S.weeklyMealPlan.days[dayIdx].meals[i]=newVal;
+          saveStateLS(S);
+        }
+      });
+      row.appendChild(chk);
+      row.appendChild(span);
       list.appendChild(row);
     });
   }
@@ -1942,10 +1960,25 @@ function renderWeeklyWorkout(plan){
 function renderWeeklyMeal(plan){
   const container=document.getElementById('weekly-meal-result');
   container.innerHTML='';
-  (plan.days||[]).forEach(day=>{
+  (plan.days||[]).forEach((day,dayIdx)=>{
     const block=document.createElement('div');block.className='week-day-block';
-    const mealsHTML=(day.meals||[]).map(m=>'<div style="padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;color:var(--text);" contenteditable="true">'+m+'</span></div>').join('');
-    block.innerHTML='<div class="week-day-label">'+day.day+'</div>'+mealsHTML;
+    block.innerHTML='<div class="week-day-label">'+day.day+'</div>';
+    (day.meals||[]).forEach((meal,mealIdx)=>{
+      const row=document.createElement('div');
+      row.style.cssText='padding:5px 0;border-bottom:1px solid var(--border);';
+      const span=document.createElement('span');
+      span.style.cssText='font-size:12px;color:var(--text);display:block;outline:none;';
+      span.contentEditable='true';
+      span.textContent=meal;
+      span.addEventListener('blur',()=>{
+        if(S.weeklyMealPlan&&S.weeklyMealPlan.days[dayIdx]){
+          S.weeklyMealPlan.days[dayIdx].meals[mealIdx]=span.textContent.trim()||meal;
+          saveStateLS(S);
+        }
+      });
+      row.appendChild(span);
+      block.appendChild(row);
+    });
     container.appendChild(block);
   });
   const note=document.createElement('p');
