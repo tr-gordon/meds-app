@@ -2329,11 +2329,50 @@ function buildGroceryList(){
   },300);
 }
 
+function parseLegacyExercise(str){
+  // Parse strings like "Bench press — 4×8", "Plank — 4×60s", "Easy jog at 60% effort — 20 min"
+  const s=str||'';
+  const dashIdx=s.lastIndexOf('—');
+  const name=dashIdx>0?s.slice(0,dashIdx).trim():s;
+  const detail=dashIdx>0?s.slice(dashIdx+1).trim():'';
+
+  // Detect type from name keywords
+  const runWords=['jog','run','walk','sprint','cycling','bike','elliptical','stair','row','jump rope','swim'];
+  const timedWords=['plank','hold','rest','stretch','savasana','pose','fold','lunge','pigeon','cat-cow','child','twist','breath','flow','salutation','sequence','interval','circuit'];
+  const weightWords=['press','squat','deadlift','curl','row','pulldown','raise','dip','fly','extension','pullover','shrug'];
+  const n=name.toLowerCase();
+  const isRun=runWords.some(w=>n.includes(w));
+  const isTimed=!isRun&&timedWords.some(w=>n.includes(w));
+  const isWeight=!isRun&&!isTimed&&weightWords.some(w=>n.includes(w));
+
+  // Parse sets×reps like "4×8" or "3×12"
+  const setsReps=detail.match(/(\d+)\s*[×x]\s*(\d+)/);
+  // Parse sets like "×6" or "×10"
+  const setsOnly=detail.match(/×\s*(\d+)$/);
+  // Parse duration like "20 min", "60s", "5 min"
+  const durMatch=detail.match(/(\d+)\s*(min|s)\b/);
+
+  let sets=null,reps=null,duration=null;
+  if(setsReps){sets=parseInt(setsReps[1]);reps=parseInt(setsReps[2]);}
+  else if(setsOnly){sets=parseInt(setsOnly[1]);}
+  if(durMatch){duration=durMatch[1]+(durMatch[2]==='s'?'s':' min');}
+
+  let type='bodyweight';
+  if(isRun){type=n.includes('walk')||n.includes('stretch')||n.includes('warm')||n.includes('cool')?'cardio':'run';}
+  else if(isTimed){type='timed';}
+  else if(isWeight&&sets&&reps){type='strength';}
+  else if(sets&&reps){type='bodyweight';}
+  else if(duration){type='cardio';}
+
+  return{name,sets,reps,duration,type,distance:isRun&&!n.includes('warm')&&!n.includes('cool')&&!n.includes('stretch')};
+}
+
 function makeExerciseRow(ex,logKey,onToggle){
-  // ex can be an object (new format) or a string (legacy)
+  // ex can be an object (new format) or a string (legacy) — parse legacy strings
   const isObj=typeof ex==='object'&&ex!==null;
-  const type=isObj?ex.type:'legacy';
-  const name=isObj?ex.name:ex;
+  const parsed=isObj?ex:parseLegacyExercise(ex);
+  const type=parsed.type||'bodyweight';
+  const name=parsed.name||(isObj?ex:ex);
 
   const row=document.createElement('div');row.className='ex-row';
 
@@ -2343,53 +2382,57 @@ function makeExerciseRow(ex,logKey,onToggle){
   chk.innerHTML='<div class="ex-done-chk-in"></div>';
   chk.addEventListener('click',()=>{
     chk.classList.toggle('done');
+    const inner=chk.querySelector('.ex-done-chk-in');
+    if(inner)inner.style.display=chk.classList.contains('done')?'block':'none';
+    nameEl.style.textDecoration=chk.classList.contains('done')?'line-through':'';
+    nameEl.style.color=chk.classList.contains('done')?'var(--muted)':'';
     if(onToggle)onToggle();
   });
   const nameEl=document.createElement('span');nameEl.className='ex-name';nameEl.textContent=name;
   nameEl.contentEditable='true';nameEl.style.outline='none';
   top.appendChild(chk);top.appendChild(nameEl);
-  if(isObj&&ex.note){const n=document.createElement('span');n.className='ex-note';n.textContent='('+ex.note+')';top.appendChild(n);}
+  if(isObj&&parsed.note){const n=document.createElement('span');n.className='ex-note';n.textContent='('+parsed.note+')';top.appendChild(n);}
   row.appendChild(top);
 
-  // Prescribed summary line
-  if(isObj){
-    let prescribed='';
-    if(type==='strength'||type==='bodyweight'){
-      if(ex.sets&&ex.reps)prescribed=ex.sets+'×'+ex.reps+(ex.duration?' · '+ex.duration:'');
-      else if(ex.sets&&ex.duration)prescribed=ex.sets+' sets · '+ex.duration;
-    }else if(type==='timed'){
-      prescribed=(ex.sets?ex.sets+' sets · ':'')+( ex.duration||'');
-    }else if(type==='cardio'||type==='run'){
-      prescribed=ex.duration||'';
-    }else if(type==='yoga'){
-      prescribed=ex.sets?ex.sets+' rounds'+(ex.duration?' · '+ex.duration:''):ex.duration||'';
-    }
-    if(prescribed){const p=document.createElement('div');p.className='ex-prescribed';p.style.cssText='margin-left:24px;margin-bottom:4px;';p.textContent='Target: '+prescribed;row.appendChild(p);}
+  // Prescribed summary
+  let prescribed='';
+  if(type==='strength'||type==='bodyweight'){
+    if(parsed.sets&&parsed.reps)prescribed=parsed.sets+'×'+parsed.reps+(parsed.duration?' · '+parsed.duration:'');
+  }else if(type==='timed'){
+    prescribed=(parsed.sets?parsed.sets+' sets · ':'')+( parsed.duration||'');
+  }else if(type==='cardio'||type==='run'){
+    prescribed=parsed.duration||'';
+  }else if(type==='yoga'){
+    prescribed=parsed.sets?parsed.sets+' rounds'+(parsed.duration?' · '+parsed.duration:''):parsed.duration||'';
+  }
+  if(prescribed){
+    const p=document.createElement('div');p.className='ex-prescribed';
+    p.style.cssText='margin-left:24px;margin-bottom:4px;';p.textContent='Target: '+prescribed;
+    row.appendChild(p);
   }
 
-  // Input fields based on type
-  if(isObj&&type!=='rest'&&type!=='note'){
+  // Input fields
+  if(type!=='rest'&&type!=='note'){
     const fields=document.createElement('div');fields.className='ex-fields';fields.style.marginLeft='24px';
-
     if(type==='strength'){
-      fields.appendChild(makeField('Sets','number',ex.sets||'',logKey+'_sets'));
-      fields.appendChild(makeField('Reps','number',ex.reps||'',logKey+'_reps'));
+      fields.appendChild(makeField('Sets','number',parsed.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Reps','number',parsed.reps||'',logKey+'_reps'));
       fields.appendChild(makeField('lbs','number','',logKey+'_lbs'));
     }else if(type==='bodyweight'){
-      fields.appendChild(makeField('Sets','number',ex.sets||'',logKey+'_sets'));
-      fields.appendChild(makeField('Reps','number',ex.reps||'',logKey+'_reps'));
+      fields.appendChild(makeField('Sets','number',parsed.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Reps','number',parsed.reps||'',logKey+'_reps'));
     }else if(type==='timed'){
-      fields.appendChild(makeField('Sets','number',ex.sets||'',logKey+'_sets'));
-      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
+      if(parsed.sets)fields.appendChild(makeField('Sets','number',parsed.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Duration','text',parsed.duration||'',logKey+'_dur',true));
     }else if(type==='run'){
-      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
-      if(ex.distance)fields.appendChild(makeField('Miles','number','',logKey+'_dist'));
+      fields.appendChild(makeField('Duration','text',parsed.duration||'',logKey+'_dur',true));
+      if(parsed.distance)fields.appendChild(makeField('Miles','number','',logKey+'_dist'));
     }else if(type==='cardio'){
-      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
-      if(ex.distance)fields.appendChild(makeField('Miles','number','',logKey+'_dist'));
+      fields.appendChild(makeField('Duration','text',parsed.duration||'',logKey+'_dur',true));
+      if(parsed.distance)fields.appendChild(makeField('Miles','number','',logKey+'_dist'));
     }else if(type==='yoga'){
-      if(ex.sets)fields.appendChild(makeField('Rounds','number',ex.sets||'',logKey+'_sets'));
-      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
+      if(parsed.sets)fields.appendChild(makeField('Rounds','number',parsed.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Duration','text',parsed.duration||'',logKey+'_dur',true));
     }
     if(fields.children.length)row.appendChild(fields);
   }
@@ -2414,6 +2457,18 @@ function makeField(label,inputType,defaultVal,id,wide){
 function renderWeeklyWorkout(plan){
   const container=document.getElementById('weekly-workout-result');
   container.innerHTML='';
+
+  // Detect if plan uses old string format — show regenerate nudge
+  const firstExercises=(plan.days||[]).find(d=>!d.rest&&d.exercises&&d.exercises.length);
+  const isLegacy=firstExercises&&typeof firstExercises.exercises[0]==='string';
+  if(isLegacy){
+    const banner=document.createElement('div');
+    banner.style.cssText='background:var(--e-bg);border:1px solid var(--e);border-radius:var(--radius-sm);padding:10px 13px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;';
+    banner.innerHTML='<p style="font-size:11px;color:var(--e);line-height:1.5;flex:1;">Regenerate your plan to get Sets · Reps · lbs tracking fields.</p>'+
+      '<button onclick="document.getElementById(\'weekly-workout-result\').innerHTML=\'\';generateWeeklyWorkout();" style="font-size:11px;color:var(--e);background:none;border:none;cursor:pointer;white-space:nowrap;font-family:\'DM Sans\',sans-serif;font-weight:500;">Regenerate →</button>';
+    container.appendChild(banner);
+  }
+
   (plan.days||[]).forEach((day,di)=>{
     const block=document.createElement('div');block.className='week-day-block';
     if(day.rest){
