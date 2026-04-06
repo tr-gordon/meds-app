@@ -6,6 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MEDS">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon.png">
 <meta name="theme-color" content="#0a0f0d">
 <title>MEDS — Daily Accountability</title>
 <style>
@@ -3287,15 +3289,33 @@ function requestNotifPermission(){
   Notification.requestPermission().then(()=>{renderNotifSettings();scheduleNotifications();});
 }
 
+function registerServiceWorker(){
+  if(!('serviceWorker' in navigator))return;
+  navigator.serviceWorker.register('/sw.js').then(reg=>{
+    console.log('SW registered');
+    scheduleNotifications();
+  }).catch(()=>{});
+}
+
 function scheduleNotifications(){
   if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const settings=getNotifSettings();
+  // Send schedule to service worker for background delivery
+  if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({
+      type:'SCHEDULE_NOTIFS',
+      settings,
+      checked:S.checked
+    });
+  }
+  // Also schedule in-page timers as fallback
   if(window._notifTimers){window._notifTimers.forEach(t=>clearTimeout(t));}
   window._notifTimers=[];
-  const settings=getNotifSettings();
   const now=new Date();
   ['m','e','d','s'].forEach(k=>{
     const cfg=settings[k];
     if(!cfg||!cfg.enabled||!cfg.time)return;
+    if(S.checked[k])return;
     const [hh,mm]=cfg.time.split(':').map(Number);
     const fire=new Date();fire.setHours(hh,mm,0,0);
     if(fire<=now)return;
@@ -3340,6 +3360,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
   const isStandalone=window.navigator.standalone;
   if(isIOS&&!isStandalone&&S.profile){document.getElementById('install-banner').style.display='flex';}
+  registerServiceWorker();
   scheduleNotifications();
 });
 </script>
