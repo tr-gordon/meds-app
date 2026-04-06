@@ -247,6 +247,23 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 .coach-tab{flex:1;padding:10px 4px;font-size:11px;font-weight:500;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;transition:color .15s;}
 .coach-tab.active{color:var(--e);border-bottom-color:var(--e);}
 
+.ex-row{display:flex;flex-direction:column;padding:8px 0;border-bottom:1px solid var(--border);}
+.ex-row:last-child{border-bottom:none;}
+.ex-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.ex-name{font-size:13px;color:var(--text);flex:1;font-weight:500;}
+.ex-note{font-size:10px;color:var(--muted);margin-left:4px;}
+.ex-fields{display:flex;gap:6px;align-items:center;}
+.ex-field{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.ex-field label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+.ex-field input{width:52px;padding:5px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:12px;text-align:center;font-family:'DM Sans',sans-serif;-webkit-appearance:none;}
+.ex-field input:focus{outline:none;border-color:var(--e);}
+.ex-field-wide input{width:70px;}
+.ex-done-chk{width:16px;height:16px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.ex-done-chk.done{background:var(--e);border-color:var(--e);}
+.ex-done-chk-in{width:8px;height:8px;border-radius:2px;background:#fff;display:none;}
+.ex-done-chk.done .ex-done-chk-in{display:block;}
+.ex-prescribed{font-size:10px;color:var(--muted);font-style:italic;}
+
 /* SCORE COLORS */
 .score-green .score-fill{background:var(--e);}
 .score-amber .score-fill{background:var(--d);}
@@ -795,7 +812,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
             <p class="ai-text" id="ex-today-focus-lbl"></p>
           </div>
           <div class="routine-block" id="ex-today-plan-list"></div>
-          <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">All exercises are editable — tap text to change</p>
+          <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Log your sets, reps, and weight — tap the circle to mark complete</p>
         </div>
         <div id="ex-today-rest" style="display:none;">
           <div class="ai-card">
@@ -1690,9 +1707,22 @@ function loadTodayExercise(){
     document.getElementById('ex-today-focus-lbl').textContent=todayEntry.day+' — '+todayEntry.focus;
     const list=document.getElementById('ex-today-plan-list');
     list.innerHTML='';
-    (todayEntry.exercises||[]).forEach(ex=>{
-      const row=document.createElement('div');row.className='routine-item';
-      row.innerHTML='<div class="rchk" onclick="this.classList.toggle(\'done\');this.querySelector(\'.rchk-in\').style.display=this.classList.contains(\'done\')?\'block\':\'none\'"><div class="rchk-in"></div></div><span class="routine-text" contenteditable="true">'+ex+'</span>';
+    let completedCount=0;
+    (todayEntry.exercises||[]).forEach((ex,ei)=>{
+      const row=makeExerciseRow(ex,'today-'+ei,()=>{
+        // Count done exercises and auto-mark pillar
+        const done=list.querySelectorAll('.ex-done-chk.done').length;
+        const total=list.querySelectorAll('.ex-done-chk').length;
+        if(done>0&&!S.checked.e){
+          S.checked.e=true;
+          const dur=chips['wk-dur']||S.details.edur||'45';
+          S.logs.e=parseInt(dur)||45;
+          S.details.edur=dur;
+          S.details.wtype=todayEntry.focus||'';
+          if(Object.values(S.checked).every(Boolean))S.score=computeScore();
+          persistToday();renderAll();
+        }
+      });
       list.appendChild(row);
     });
     saveBtn.style.display='block';
@@ -1805,38 +1835,180 @@ function loadTodayMeal(){
 
 const WK_WORKOUTS={
   Strength:{
-    'Upper body':['Bench press — 4×8','Incline dumbbell press — 3×10','Cable rows — 4×10','Pull-ups — 3×8','Shoulder press — 3×10','Tricep dips — 3×12','Bicep curls — 3×12'],
-    'Lower body':['Barbell squat — 4×8','Romanian deadlift — 4×10','Leg press — 3×12','Lunges — 3×12 each','Leg curl — 3×12','Calf raises — 4×20','Glute bridges — 3×15'],
-    'Back & Core':['Deadlift — 4×6','Barbell rows — 4×8','Lat pulldown — 3×10','Plank — 4×60s','Russian twists — 3×20','Dead bug — 3×10','Face pulls — 3×15'],
-    'Full body':['Squat — 4×8','Bench press — 3×8','Deadlift — 3×6','Pull-ups — 3×8','Shoulder press — 3×10','Plank — 3×45s'],
-    'Arms & Shoulders':['Overhead press — 4×10','Lateral raises — 3×15','Bicep curls — 4×12','Hammer curls — 3×12','Tricep pushdowns — 4×12','Face pulls — 3×15']
+    'Upper body':[
+      {name:'Bench press',sets:4,reps:8,type:'strength'},
+      {name:'Incline dumbbell press',sets:3,reps:10,type:'strength'},
+      {name:'Cable rows',sets:4,reps:10,type:'strength'},
+      {name:'Pull-ups',sets:3,reps:8,type:'strength'},
+      {name:'Shoulder press',sets:3,reps:10,type:'strength'},
+      {name:'Tricep dips',sets:3,reps:12,type:'strength'},
+      {name:'Bicep curls',sets:3,reps:12,type:'strength'}
+    ],
+    'Lower body':[
+      {name:'Barbell squat',sets:4,reps:8,type:'strength'},
+      {name:'Romanian deadlift',sets:4,reps:10,type:'strength'},
+      {name:'Leg press',sets:3,reps:12,type:'strength'},
+      {name:'Lunges',sets:3,reps:12,note:'each leg',type:'strength'},
+      {name:'Leg curl',sets:3,reps:12,type:'strength'},
+      {name:'Calf raises',sets:4,reps:20,type:'strength'},
+      {name:'Glute bridges',sets:3,reps:15,type:'bodyweight'}
+    ],
+    'Back & Core':[
+      {name:'Deadlift',sets:4,reps:6,type:'strength'},
+      {name:'Barbell rows',sets:4,reps:8,type:'strength'},
+      {name:'Lat pulldown',sets:3,reps:10,type:'strength'},
+      {name:'Plank',sets:4,duration:'60s',type:'timed'},
+      {name:'Russian twists',sets:3,reps:20,type:'bodyweight'},
+      {name:'Dead bug',sets:3,reps:10,type:'bodyweight'},
+      {name:'Face pulls',sets:3,reps:15,type:'strength'}
+    ],
+    'Full body':[
+      {name:'Squat',sets:4,reps:8,type:'strength'},
+      {name:'Bench press',sets:3,reps:8,type:'strength'},
+      {name:'Deadlift',sets:3,reps:6,type:'strength'},
+      {name:'Pull-ups',sets:3,reps:8,type:'bodyweight'},
+      {name:'Shoulder press',sets:3,reps:10,type:'strength'},
+      {name:'Plank',sets:3,duration:'45s',type:'timed'}
+    ],
+    'Arms & Shoulders':[
+      {name:'Overhead press',sets:4,reps:10,type:'strength'},
+      {name:'Lateral raises',sets:3,reps:15,type:'strength'},
+      {name:'Bicep curls',sets:4,reps:12,type:'strength'},
+      {name:'Hammer curls',sets:3,reps:12,type:'strength'},
+      {name:'Tricep pushdowns',sets:4,reps:12,type:'strength'},
+      {name:'Face pulls',sets:3,reps:15,type:'strength'}
+    ]
   },
   Cardio:{
-    'Endurance run':['Warm-up walk — 5 min','Easy jog at 60% effort — 20 min','Steady state run — 10 min','Cool-down walk — 5 min'],
-    'Intervals':['Warm-up — 5 min','Sprint 30s / walk 30s — ×10','Tempo run at 80% — 10 min','Cool-down — 5 min'],
-    'Cycling':['Warm-up spin — 5 min','Moderate pace — 20 min','Sprint intervals 30s/30s — ×8','Cool-down — 5 min'],
-    'Row & Cardio':['Rowing machine — 15 min','Jump rope — 5 min','Stair climber — 10 min','Cool-down stretch — 5 min'],
-    'Low impact':['Brisk walk — 10 min','Elliptical — 20 min','Stationary bike — 15 min','Cool-down stretch — 5 min']
+    'Endurance run':[
+      {name:'Warm-up walk',duration:'5 min',type:'cardio'},
+      {name:'Easy jog',duration:'20 min',distance:true,type:'run'},
+      {name:'Steady state run',duration:'10 min',distance:true,type:'run'},
+      {name:'Cool-down walk',duration:'5 min',type:'cardio'}
+    ],
+    'Intervals':[
+      {name:'Warm-up',duration:'5 min',type:'cardio'},
+      {name:'Sprint intervals',note:'30s on / 30s off',sets:10,type:'cardio'},
+      {name:'Tempo run',duration:'10 min',distance:true,type:'run'},
+      {name:'Cool-down',duration:'5 min',type:'cardio'}
+    ],
+    'Cycling':[
+      {name:'Warm-up spin',duration:'5 min',type:'cardio'},
+      {name:'Moderate pace',duration:'20 min',distance:true,type:'cardio'},
+      {name:'Sprint intervals',note:'30s/30s',sets:8,type:'cardio'},
+      {name:'Cool-down',duration:'5 min',type:'cardio'}
+    ],
+    'Row & Cardio':[
+      {name:'Rowing machine',duration:'15 min',distance:true,type:'cardio'},
+      {name:'Jump rope',duration:'5 min',type:'cardio'},
+      {name:'Stair climber',duration:'10 min',type:'cardio'},
+      {name:'Cool-down stretch',duration:'5 min',type:'cardio'}
+    ],
+    'Low impact':[
+      {name:'Brisk walk',duration:'10 min',distance:true,type:'run'},
+      {name:'Elliptical',duration:'20 min',type:'cardio'},
+      {name:'Stationary bike',duration:'15 min',type:'cardio'},
+      {name:'Cool-down stretch',duration:'5 min',type:'cardio'}
+    ]
   },
   HIIT:{
-    'Full body blast':['Burpees — 40s/20s ×4','Jump squats — 40s/20s ×4','Push-ups — 40s/20s ×4','Mountain climbers — 40s/20s ×4','Rest — 90s','Repeat ×2'],
-    'Lower power':['Jump squats — 40s/20s ×5','Speed skaters — 40s/20s ×5','Alternating lunges — 40s/20s ×5','Box jumps — 40s/20s ×4'],
-    'Upper burn':['Push-up variations — 40s/20s ×5','Dips — 40s/20s ×4','Plank to push-up — 40s/20s ×4','Pike push-ups — 40s/20s ×4'],
-    'Core HIIT':['Plank jacks — 40s/20s ×5','V-ups — 40s/20s ×5','Flutter kicks — 40s/20s ×5','Bicycle crunches — 40s/20s ×5'],
-    'Cardio HIIT':['High knees — 40s/20s ×5','Jumping jacks — 40s/20s ×5','Butt kicks — 40s/20s ×5','Lateral shuffles — 40s/20s ×5']
+    'Full body blast':[
+      {name:'Burpees',sets:4,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Jump squats',sets:4,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Push-ups',sets:4,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Mountain climbers',sets:4,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Rest',duration:'90s',type:'rest'},
+      {name:'Repeat circuit',sets:2,type:'note'}
+    ],
+    'Lower power':[
+      {name:'Jump squats',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Speed skaters',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Alternating lunges',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Box jumps',sets:4,duration:'40s',note:'20s rest',type:'timed'}
+    ],
+    'Upper burn':[
+      {name:'Push-up variations',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Dips',sets:4,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Plank to push-up',sets:4,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Pike push-ups',sets:4,duration:'40s',note:'20s rest',type:'timed'}
+    ],
+    'Core HIIT':[
+      {name:'Plank jacks',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'V-ups',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Flutter kicks',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Bicycle crunches',sets:5,duration:'40s',note:'20s rest',type:'timed'}
+    ],
+    'Cardio HIIT':[
+      {name:'High knees',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Jumping jacks',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Butt kicks',sets:5,duration:'40s',note:'20s rest',type:'timed'},
+      {name:'Lateral shuffles',sets:5,duration:'40s',note:'20s rest',type:'timed'}
+    ]
   },
   Yoga:{
-    'Flow':['Sun salutation A — 5 rounds','Warrior I & II — 5 breaths each','Triangle pose — 5 breaths each side','Child\'s pose — 2 min','Savasana — 5 min'],
-    'Strength yoga':['Downward dog — 5 breaths','Chaturanga flow — 5 rounds','Warrior III — 5 breaths','Crow pose — 5 attempts','Plank hold — 3×45s'],
-    'Hip & lower':['Low lunge — 5 breaths each','Pigeon pose — 2 min each','Seated forward fold — 3 min','Happy baby — 2 min','Legs up wall — 3 min'],
-    'Restorative':['Child\'s pose — 3 min','Reclined twist — 2 min each','Legs up wall — 5 min','Savasana with breath — 10 min'],
-    'Morning flow':['Cat-cow — 2 min','Sun salutation B — 3 rounds','Warrior sequence — 10 min','Seated stretch — 5 min','Savasana — 3 min']
+    'Flow':[
+      {name:'Sun salutation A',sets:5,type:'yoga'},
+      {name:'Warrior I & II',duration:'5 breaths each',type:'yoga'},
+      {name:'Triangle pose',duration:'5 breaths each side',type:'yoga'},
+      {name:"Child's pose",duration:'2 min',type:'yoga'},
+      {name:'Savasana',duration:'5 min',type:'yoga'}
+    ],
+    'Strength yoga':[
+      {name:'Downward dog',duration:'5 breaths',type:'yoga'},
+      {name:'Chaturanga flow',sets:5,type:'yoga'},
+      {name:'Warrior III',duration:'5 breaths',type:'yoga'},
+      {name:'Crow pose',sets:5,note:'attempts',type:'yoga'},
+      {name:'Plank hold',sets:3,duration:'45s',type:'timed'}
+    ],
+    'Hip & lower':[
+      {name:'Low lunge',duration:'5 breaths each',type:'yoga'},
+      {name:'Pigeon pose',duration:'2 min each',type:'yoga'},
+      {name:'Seated forward fold',duration:'3 min',type:'yoga'},
+      {name:'Happy baby',duration:'2 min',type:'yoga'},
+      {name:'Legs up wall',duration:'3 min',type:'yoga'}
+    ],
+    'Restorative':[
+      {name:"Child's pose",duration:'3 min',type:'yoga'},
+      {name:'Reclined twist',duration:'2 min each',type:'yoga'},
+      {name:'Legs up wall',duration:'5 min',type:'yoga'},
+      {name:'Savasana with breath',duration:'10 min',type:'yoga'}
+    ],
+    'Morning flow':[
+      {name:'Cat-cow',duration:'2 min',type:'yoga'},
+      {name:'Sun salutation B',sets:3,type:'yoga'},
+      {name:'Warrior sequence',duration:'10 min',type:'yoga'},
+      {name:'Seated stretch',duration:'5 min',type:'yoga'},
+      {name:'Savasana',duration:'3 min',type:'yoga'}
+    ]
   },
   Sports:{
-    'Agility':['Dynamic warm-up — 5 min','Agility ladder drills — 10 min','Cone drills — 10 min','Sprint work — 10 min','Cool-down — 5 min'],
-    'Power':['Box jumps — 4×8','Medicine ball slams — 4×10','Broad jumps — 3×8','Sprint 40m — ×6','Cool-down — 5 min'],
-    'Conditioning':['Jump rope — 5 min','Shuttle runs — 10 min','Sport drills — 15 min','Core work — 10 min','Cool-down — 5 min'],
-    'Recovery sport':['Light jog — 10 min','Dynamic stretching — 10 min','Mobility work — 15 min','Cool-down — 5 min']
+    'Agility':[
+      {name:'Dynamic warm-up',duration:'5 min',type:'cardio'},
+      {name:'Agility ladder drills',duration:'10 min',type:'cardio'},
+      {name:'Cone drills',duration:'10 min',type:'cardio'},
+      {name:'Sprint work',duration:'10 min',distance:true,type:'run'},
+      {name:'Cool-down',duration:'5 min',type:'cardio'}
+    ],
+    'Power':[
+      {name:'Box jumps',sets:4,reps:8,type:'bodyweight'},
+      {name:'Medicine ball slams',sets:4,reps:10,type:'bodyweight'},
+      {name:'Broad jumps',sets:3,reps:8,type:'bodyweight'},
+      {name:'Sprint 40m',sets:6,type:'run',distance:true},
+      {name:'Cool-down',duration:'5 min',type:'cardio'}
+    ],
+    'Conditioning':[
+      {name:'Jump rope',duration:'5 min',type:'cardio'},
+      {name:'Shuttle runs',duration:'10 min',type:'cardio'},
+      {name:'Sport drills',duration:'15 min',type:'cardio'},
+      {name:'Core work',duration:'10 min',type:'cardio'},
+      {name:'Cool-down',duration:'5 min',type:'cardio'}
+    ],
+    'Recovery sport':[
+      {name:'Light jog',duration:'10 min',distance:true,type:'run'},
+      {name:'Dynamic stretching',duration:'10 min',type:'cardio'},
+      {name:'Mobility work',duration:'15 min',type:'yoga'},
+      {name:'Cool-down',duration:'5 min',type:'cardio'}
+    ]
   }
 };
 
@@ -2157,16 +2329,106 @@ function buildGroceryList(){
   },300);
 }
 
+function makeExerciseRow(ex,logKey,onToggle){
+  // ex can be an object (new format) or a string (legacy)
+  const isObj=typeof ex==='object'&&ex!==null;
+  const type=isObj?ex.type:'legacy';
+  const name=isObj?ex.name:ex;
+
+  const row=document.createElement('div');row.className='ex-row';
+
+  // Top row: checkbox + name + note
+  const top=document.createElement('div');top.className='ex-top';
+  const chk=document.createElement('div');chk.className='ex-done-chk';
+  chk.innerHTML='<div class="ex-done-chk-in"></div>';
+  chk.addEventListener('click',()=>{
+    chk.classList.toggle('done');
+    if(onToggle)onToggle();
+  });
+  const nameEl=document.createElement('span');nameEl.className='ex-name';nameEl.textContent=name;
+  nameEl.contentEditable='true';nameEl.style.outline='none';
+  top.appendChild(chk);top.appendChild(nameEl);
+  if(isObj&&ex.note){const n=document.createElement('span');n.className='ex-note';n.textContent='('+ex.note+')';top.appendChild(n);}
+  row.appendChild(top);
+
+  // Prescribed summary line
+  if(isObj){
+    let prescribed='';
+    if(type==='strength'||type==='bodyweight'){
+      if(ex.sets&&ex.reps)prescribed=ex.sets+'×'+ex.reps+(ex.duration?' · '+ex.duration:'');
+      else if(ex.sets&&ex.duration)prescribed=ex.sets+' sets · '+ex.duration;
+    }else if(type==='timed'){
+      prescribed=(ex.sets?ex.sets+' sets · ':'')+( ex.duration||'');
+    }else if(type==='cardio'||type==='run'){
+      prescribed=ex.duration||'';
+    }else if(type==='yoga'){
+      prescribed=ex.sets?ex.sets+' rounds'+(ex.duration?' · '+ex.duration:''):ex.duration||'';
+    }
+    if(prescribed){const p=document.createElement('div');p.className='ex-prescribed';p.style.cssText='margin-left:24px;margin-bottom:4px;';p.textContent='Target: '+prescribed;row.appendChild(p);}
+  }
+
+  // Input fields based on type
+  if(isObj&&type!=='rest'&&type!=='note'){
+    const fields=document.createElement('div');fields.className='ex-fields';fields.style.marginLeft='24px';
+
+    if(type==='strength'){
+      fields.appendChild(makeField('Sets','number',ex.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Reps','number',ex.reps||'',logKey+'_reps'));
+      fields.appendChild(makeField('lbs','number','',logKey+'_lbs'));
+    }else if(type==='bodyweight'){
+      fields.appendChild(makeField('Sets','number',ex.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Reps','number',ex.reps||'',logKey+'_reps'));
+    }else if(type==='timed'){
+      fields.appendChild(makeField('Sets','number',ex.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
+    }else if(type==='run'){
+      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
+      if(ex.distance)fields.appendChild(makeField('Miles','number','',logKey+'_dist'));
+    }else if(type==='cardio'){
+      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
+      if(ex.distance)fields.appendChild(makeField('Miles','number','',logKey+'_dist'));
+    }else if(type==='yoga'){
+      if(ex.sets)fields.appendChild(makeField('Rounds','number',ex.sets||'',logKey+'_sets'));
+      fields.appendChild(makeField('Duration','text',ex.duration||'',logKey+'_dur',true));
+    }
+    if(fields.children.length)row.appendChild(fields);
+  }
+  return row;
+}
+
+function makeField(label,inputType,defaultVal,id,wide){
+  const wrap=document.createElement('div');
+  wrap.className='ex-field'+(wide?' ex-field-wide':'');
+  const lbl=document.createElement('label');lbl.textContent=label;
+  const inp=document.createElement('input');
+  inp.type=inputType;inp.placeholder=defaultVal?String(defaultVal):'–';
+  inp.id=id;
+  inp.style.width=wide?'70px':'52px';
+  // Restore saved value
+  try{const saved=sessionStorage.getItem('ex-log-'+id);if(saved)inp.value=saved;}catch(e){}
+  inp.addEventListener('change',()=>{try{sessionStorage.setItem('ex-log-'+id,inp.value);}catch(e){}});
+  wrap.appendChild(lbl);wrap.appendChild(inp);
+  return wrap;
+}
+
 function renderWeeklyWorkout(plan){
   const container=document.getElementById('weekly-workout-result');
   container.innerHTML='';
-  (plan.days||[]).forEach(day=>{
+  (plan.days||[]).forEach((day,di)=>{
     const block=document.createElement('div');block.className='week-day-block';
     if(day.rest){
       block.innerHTML='<div class="week-day-label">'+day.day+'</div><div class="week-day-rest">Rest & recovery</div>';
     }else{
-      const exHTML=(day.exercises||[]).map(ex=>'<div class="routine-item"><div class="rchk" onclick="this.classList.toggle(\'done\');this.querySelector(\'.rchk-in\').style.display=this.classList.contains(\'done\')?\'block\':\'none\'"><div class="rchk-in"></div></div><span class="routine-text" contenteditable="true">'+ex+'</span></div>').join('');
-      block.innerHTML='<div class="week-day-label">'+day.day+(day.focus?' — '+day.focus:'')+'</div><div class="routine-block" style="margin-top:6px;padding:8px 10px;">'+exHTML+'</div>';
+      const label=document.createElement('div');label.className='week-day-label';
+      label.textContent=day.day+(day.focus?' — '+day.focus:'');
+      block.appendChild(label);
+      const inner=document.createElement('div');inner.className='routine-block';
+      inner.style.cssText='margin-top:6px;padding:6px 10px;';
+      (day.exercises||[]).forEach((ex,ei)=>{
+        const row=makeExerciseRow(ex,'wk-'+di+'-'+ei,null);
+        inner.appendChild(row);
+      });
+      block.appendChild(inner);
     }
     container.appendChild(block);
   });
