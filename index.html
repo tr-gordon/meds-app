@@ -2853,6 +2853,7 @@ function persistToday(){
   if(idx>=0)S.history[idx]=entry;else S.history.push(entry);
   if(S.history.length>60)S.history=S.history.slice(-60);
   saveStateLS(S);
+  notifySwChecked();
 }
 
 function renderTrends(){
@@ -3293,7 +3294,9 @@ function registerServiceWorker(){
   if(!('serviceWorker' in navigator))return;
   navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(reg=>{
     console.log('SW registered, scope:',reg.scope);
-    // Once SW is active, send the schedule
+    // Force check for SW updates every time app opens
+    reg.update();
+
     const sendSchedule=()=>{
       if(navigator.serviceWorker.controller){
         navigator.serviceWorker.controller.postMessage({
@@ -3303,20 +3306,43 @@ function registerServiceWorker(){
         });
       }
     };
-    if(reg.active)sendSchedule();
+
+    // Send immediately if controller exists
+    if(navigator.serviceWorker.controller){
+      sendSchedule();
+    }
+
+    // Also send when SW becomes active
     reg.addEventListener('updatefound',()=>{
-      reg.installing.addEventListener('statechange',e=>{
-        if(e.target.state==='activated')sendSchedule();
+      const sw=reg.installing;
+      sw.addEventListener('statechange',()=>{
+        if(sw.state==='activated')sendSchedule();
       });
     });
+
+    // Send when controller changes (new SW takes over)
     navigator.serviceWorker.addEventListener('controllerchange',sendSchedule);
+
+    // Retry after short delay in case SW wasn't ready yet
+    setTimeout(sendSchedule, 1500);
   }).catch(err=>console.warn('SW registration failed:',err));
+}
+
+function notifySwChecked(){
+  // Called whenever a pillar is checked — tells SW to skip that notification
+  if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({
+      type:'UPDATE_CHECKED',
+      checked:S.checked
+    });
+  }
 }
 
 function scheduleNotifications(){
   if(!('Notification' in window)||Notification.permission!=='granted')return;
   const settings=getNotifSettings();
-  // Send schedule to service worker for background delivery
+
+  // Send to service worker — primary mechanism for background delivery
   if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
     navigator.serviceWorker.controller.postMessage({
       type:'SCHEDULE_NOTIFS',
@@ -3324,7 +3350,8 @@ function scheduleNotifications(){
       checked:S.checked
     });
   }
-  // Also schedule in-page timers as fallback
+
+  // In-page fallback timers (work while app is open/foreground)
   if(window._notifTimers){window._notifTimers.forEach(t=>clearTimeout(t));}
   window._notifTimers=[];
   const now=new Date();
@@ -3338,7 +3365,7 @@ function scheduleNotifications(){
     const t=setTimeout(()=>{
       if(!S.checked[k]){
         const msg=NOTIF_MSGS[k];
-        try{new Notification(msg.title,{body:msg.body,tag:'meds-'+k,renotify:true});}catch(e){}
+        try{new Notification(msg.title,{body:msg.body,tag:'meds-'+k,renotify:true,vibrate:[200,100,200]});}catch(e){}
       }
     },fire-now);
     window._notifTimers.push(t);
