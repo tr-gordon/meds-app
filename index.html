@@ -1075,8 +1075,8 @@ let multiChips={};
 function loadState(){try{return JSON.parse(localStorage.getItem('meds-pwa')||'null');}catch(e){return null;}}
 function saveStateLS(s){
   try{
-    // Always strip any stray imgBase64 from photoLog before saving
     const clean=JSON.parse(JSON.stringify(s));
+    // Strip imgBase64 from photo logs
     if(clean.details&&clean.details.photoLog){
       clean.details.photoLog=clean.details.photoLog.map(p=>{const {imgBase64,...rest}=p;return rest;});
     }
@@ -1088,15 +1088,17 @@ function saveStateLS(s){
         return h;
       });
     }
+    // Always stamp the last saved date so we can detect day rollovers on load
+    clean.lastSavedDate=todayStr();
     localStorage.setItem('meds-pwa',JSON.stringify(clean));
   }catch(e){
     if(e.name==='QuotaExceededError'||e.code===22){
       try{
-        // Last resort: strip all photo logs and weekly plans from history
         const slim=JSON.parse(JSON.stringify(s));
         slim.history=(slim.history||[]).map(h=>({...h,details:{...h.details,photoLog:[],weeklyMealPlan:undefined,groceryList:undefined}}));
         slim.weeklyMealPlan=s.weeklyMealPlan;
         slim.groceryList=s.groceryList;
+        slim.lastSavedDate=todayStr();
         localStorage.setItem('meds-pwa',JSON.stringify(slim));
       }catch(e2){console.warn('Storage full even after stripping');}
     }
@@ -2994,7 +2996,20 @@ window.addEventListener('DOMContentLoaded',()=>{
   const now=new Date();
   document.getElementById('date-lbl').textContent=now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   const todayEntry=S.history.find(h=>h.date===todayStr());
-  if(todayEntry){S.checked={...todayEntry.checked};S.logs={...todayEntry.logs};S.details={...todayEntry.details};S.score=todayEntry.score||null;}
+  const savedToday=S.lastSavedDate===todayStr();
+  if(todayEntry&&savedToday){
+    // Restore today's saved state
+    S.checked={...todayEntry.checked};
+    S.logs={...todayEntry.logs};
+    S.details={...todayEntry.details};
+    S.score=todayEntry.score||null;
+  } else {
+    // New day or first ever open — reset daily fields, keep profile/history/streak/plans
+    S.checked={m:false,e:false,d:false,s:false};
+    S.logs={m:0,e:0,d:0,s:0};
+    S.details={};
+    S.score=null;
+  }
   loadPhotoLog();
   if(!S.profile||!S.profile.onboarded){
     document.getElementById('onboard').style.display='flex';
