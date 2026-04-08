@@ -266,6 +266,21 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 .ex-done-chk.done .ex-done-chk-in{display:block;}
 .ex-prescribed{font-size:10px;color:var(--muted);font-style:italic;}
 
+.meal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;}
+.meal-card-img{width:100%;height:110px;object-fit:cover;display:block;background:var(--faint);}
+.meal-card-img-placeholder{width:100%;height:110px;background:var(--faint);display:flex;align-items:center;justify-content:center;}
+.meal-card-body{padding:9px 11px;}
+.meal-card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;}
+.meal-card-chk{width:16px;height:16px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.meal-card-chk.done{background:var(--d);border-color:var(--d);}
+.meal-card-chk-in{width:8px;height:8px;border-radius:2px;background:#fff;display:none;}
+.meal-card-chk.done .meal-card-chk-in{display:block;}
+.meal-card-name{font-size:13px;color:var(--text);font-weight:500;flex:1;outline:none;line-height:1.4;}
+.meal-card-name.done{color:var(--muted);text-decoration:line-through;}
+.meal-card-meta{font-size:11px;color:var(--muted);margin-bottom:6px;}
+.meal-card-recipe{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--d);text-decoration:none;border:1px solid var(--d);border-radius:20px;padding:3px 10px;cursor:pointer;}
+.meal-card-recipe:active{opacity:.7;}
+
 /* SCORE COLORS */
 .score-green .score-fill{background:var(--e);}
 .score-amber .score-fill{background:var(--d);}
@@ -1796,39 +1811,22 @@ function loadTodayMeal(){
   if(todayEntry&&todayEntry.meals){
     todayEntry.meals.forEach((meal,i)=>{
       const isDone=!!checked[i];
-      const row=document.createElement('div');row.className='routine-item';
-      row.style.cssText='padding:8px 0;';
-
-      const chk=document.createElement('div');
-      chk.className='rchk'+(isDone?' done':'');
-      const chkIn=document.createElement('div');
-      chkIn.className='rchk-in';
-      chkIn.style.display=isDone?'block':'none';
-      chk.appendChild(chkIn);
-      chk.addEventListener('click',()=>{
-        const nowDone=chk.classList.toggle('done');
-        chkIn.style.display=nowDone?'block':'none';
-        checked[i]=nowDone;
-        S.details.mealsChecked[todayFull]=checked;
-        saveMealChecks();
-      });
-
-      const span=document.createElement('span');
-      span.className='routine-text';
-      span.style.cssText='font-size:13px;'+(isDone?'text-decoration:line-through;color:var(--muted);':'');
-      span.contentEditable='true';
-      span.textContent=meal;
-      span.addEventListener('blur',()=>{
-        const newVal=span.textContent.trim()||meal;
-        if(S.weeklyMealPlan&&dayIdx>=0){
-          S.weeklyMealPlan.days[dayIdx].meals[i]=newVal;
-          saveStateLS(S);
-        }
-      });
-
-      row.appendChild(chk);
-      row.appendChild(span);
-      list.appendChild(row);
+      const card=makeMealCard(
+        meal, i, dayIdx,
+        (nowDone)=>{
+          checked[i]=nowDone;
+          S.details.mealsChecked[todayFull]=checked;
+          saveMealChecks();
+        },
+        (newVal)=>{
+          if(S.weeklyMealPlan&&dayIdx>=0){
+            S.weeklyMealPlan.days[dayIdx].meals[i]=newVal;
+            saveStateLS(S);
+          }
+        },
+        isDone
+      );
+      list.appendChild(card);
     });
   }
   saveBtn.style.display='block';
@@ -2492,6 +2490,96 @@ function renderWeeklyWorkout(plan){
   container.style.display='block';
 }
 
+// Map of common meal keywords to Unsplash photo search terms
+const MEAL_PHOTO_CACHE={};
+
+function getMealSearchTerm(mealStr){
+  // Strip "Breakfast:", "Lunch:", etc prefix
+  const clean=mealStr.replace(/^(breakfast|lunch|dinner|snack)\s*:\s*/i,'').trim();
+  // Take first meaningful part before & or with or ,
+  const main=clean.split(/[,&]/)[0].trim();
+  return main;
+}
+
+function makeMealCard(meal, mealIdx, dayIdx, onCheck, onEdit, isDone){
+  const searchTerm=getMealSearchTerm(meal);
+  const recipeQuery=encodeURIComponent(searchTerm+' recipe');
+  const recipeUrl='https://www.google.com/search?q='+recipeQuery;
+
+  // Parse label vs name
+  const colonIdx=meal.indexOf(':');
+  const label=colonIdx>0?meal.slice(0,colonIdx).trim():'';
+  const dishName=colonIdx>0?meal.slice(colonIdx+1).trim():meal;
+
+  const card=document.createElement('div');
+  card.className='meal-card';
+
+  // Image area — use Unsplash source for food photos
+  const imgKey=searchTerm.toLowerCase().replace(/\s+/g,'-');
+  const imgUrl='https://source.unsplash.com/400x220/?food,'+encodeURIComponent(searchTerm);
+
+  const imgWrap=document.createElement('div');imgWrap.className='meal-card-img-placeholder';
+  imgWrap.innerHTML='<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="3" stroke="var(--muted)" stroke-width="1.5"/><circle cx="14" cy="14" r="4" stroke="var(--d)" stroke-width="1.5"/></svg>';
+
+  const img=document.createElement('img');
+  img.className='meal-card-img';
+  img.alt=dishName;
+  img.style.display='none';
+  img.onload=()=>{imgWrap.style.display='none';img.style.display='block';};
+  img.onerror=()=>{};
+  img.src=imgUrl;
+  card.appendChild(imgWrap);
+  card.appendChild(img);
+
+  // Body
+  const body=document.createElement('div');body.className='meal-card-body';
+
+  // Top row: checkbox + name
+  const top=document.createElement('div');top.className='meal-card-top';
+
+  const chk=document.createElement('div');
+  chk.className='meal-card-chk'+(isDone?' done':'');
+  chk.innerHTML='<div class="meal-card-chk-in"></div>';
+  chk.addEventListener('click',()=>{
+    const nowDone=chk.classList.toggle('done');
+    chk.querySelector('.meal-card-chk-in').style.display=nowDone?'block':'none';
+    nameSpan.className='meal-card-name'+(nowDone?' done':'');
+    if(onCheck)onCheck(nowDone);
+  });
+
+  const nameSpan=document.createElement('span');
+  nameSpan.className='meal-card-name'+(isDone?' done':'');
+  nameSpan.contentEditable='true';
+  nameSpan.textContent=dishName;
+  nameSpan.addEventListener('blur',()=>{
+    const newVal=(label?label+': ':'')+nameSpan.textContent.trim();
+    if(onEdit)onEdit(newVal);
+  });
+
+  top.appendChild(chk);top.appendChild(nameSpan);
+  body.appendChild(top);
+
+  // Label pill
+  if(label){
+    const meta=document.createElement('div');meta.className='meal-card-meta';meta.style.marginLeft='24px';
+    meta.textContent=label;body.appendChild(meta);
+  }
+
+  // Recipe link
+  const linkRow=document.createElement('div');linkRow.style.cssText='margin-left:24px;margin-top:4px;';
+  const link=document.createElement('a');
+  link.className='meal-card-recipe';
+  link.href=recipeUrl;
+  link.target='_blank';
+  link.rel='noopener';
+  link.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Recipe';
+  linkRow.appendChild(link);
+  body.appendChild(linkRow);
+
+  card.appendChild(body);
+  return card;
+}
+
 function renderWeeklyMeal(plan){
   const container=document.getElementById('weekly-meal-result');
   container.innerHTML='';
@@ -2499,20 +2587,21 @@ function renderWeeklyMeal(plan){
     const block=document.createElement('div');block.className='week-day-block';
     block.innerHTML='<div class="week-day-label">'+day.day+'</div>';
     (day.meals||[]).forEach((meal,mealIdx)=>{
-      const row=document.createElement('div');
-      row.style.cssText='padding:5px 0;border-bottom:1px solid var(--border);';
-      const span=document.createElement('span');
-      span.style.cssText='font-size:12px;color:var(--text);display:block;outline:none;';
-      span.contentEditable='true';
-      span.textContent=meal;
-      span.addEventListener('blur',()=>{
-        if(S.weeklyMealPlan&&S.weeklyMealPlan.days[dayIdx]){
-          S.weeklyMealPlan.days[dayIdx].meals[mealIdx]=span.textContent.trim()||meal;
-          saveStateLS(S);
-        }
-      });
-      row.appendChild(span);
-      block.appendChild(row);
+      const card=makeMealCard(
+        meal, mealIdx, dayIdx,
+        null, // no checkbox in weekly view
+        (newVal)=>{
+          if(S.weeklyMealPlan&&S.weeklyMealPlan.days[dayIdx]){
+            S.weeklyMealPlan.days[dayIdx].meals[mealIdx]=newVal;
+            saveStateLS(S);
+          }
+        },
+        false
+      );
+      // Hide checkbox in weekly view — it's for planning not tracking
+      const chk=card.querySelector('.meal-card-chk');
+      if(chk)chk.style.display='none';
+      block.appendChild(card);
     });
     container.appendChild(block);
   });
