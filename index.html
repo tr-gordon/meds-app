@@ -267,8 +267,6 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 .ex-prescribed{font-size:10px;color:var(--muted);font-style:italic;}
 
 .meal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;}
-.meal-card-img{width:100%;height:110px;object-fit:cover;display:block;background:var(--faint);}
-.meal-card-img-placeholder{width:100%;height:110px;background:var(--faint);display:flex;align-items:center;justify-content:center;}
 .meal-card-body{padding:9px 11px;}
 .meal-card-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;}
 .meal-card-chk{width:16px;height:16px;border-radius:4px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
@@ -2493,6 +2491,47 @@ function renderWeeklyWorkout(plan){
 // Map of common meal keywords to Unsplash photo search terms
 const MEAL_PHOTO_CACHE={};
 
+// Nutrition blurb database — keyword matched against dish name
+const NUTRITION_DB=[
+  {keys:['salmon','fish','tuna','cod','tilapia','sardine','trout','shrimp','prawn'],blurb:'Rich in omega-3 fatty acids that reduce inflammation and support heart health. An excellent source of lean protein and vitamin D, which aids calcium absorption and immune function.'},
+  {keys:['chicken','turkey','poultry'],blurb:'A complete lean protein source containing all essential amino acids needed for muscle repair and growth. High in B vitamins, particularly niacin and B6, which support energy metabolism and brain health.'},
+  {keys:['beef','steak','bison','venison','lamb'],blurb:'Provides highly bioavailable iron and zinc, critical for oxygen transport and immune function. A rich source of B12 and creatine, supporting neurological health and muscle energy production.'},
+  {keys:['egg'],blurb:'One of the most nutrient-dense foods available, containing all essential amino acids plus choline for brain health. The yolk provides fat-soluble vitamins A, D, E and K alongside healthy fats that support hormone production.'},
+  {keys:['greek yogurt','yogurt','kefir'],blurb:'Packed with probiotics that support gut microbiome diversity and digestive health. An excellent source of calcium, protein, and B12, making it ideal for bone strength and sustained energy.'},
+  {keys:['oat','oatmeal','granola','overnight oat'],blurb:'Rich in beta-glucan soluble fiber that lowers LDL cholesterol and stabilizes blood sugar levels. Provides slow-releasing complex carbohydrates that sustain energy and keep you fuller for longer.'},
+  {keys:['quinoa'],blurb:'One of the few plant foods that is a complete protein, containing all nine essential amino acids. High in fiber, magnesium, and iron, making it exceptional for energy production and muscle function.'},
+  {keys:['brown rice','rice'],blurb:'A complex carbohydrate that provides steady energy without blood sugar spikes. Contains magnesium and B vitamins that support muscle function, nerve health, and carbohydrate metabolism.'},
+  {keys:['sweet potato'],blurb:'Exceptionally high in beta-carotene, which converts to vitamin A for eye health and immune support. A great source of fiber, potassium, and complex carbs that fuel workouts and aid recovery.'},
+  {keys:['avocado'],blurb:'Loaded with heart-healthy monounsaturated fats that reduce bad cholesterol and support nutrient absorption. Rich in potassium, folate, and fiber, supporting blood pressure regulation and digestive health.'},
+  {keys:['spinach','kale','arugula','greens','leafy'],blurb:'Exceptionally nutrient-dense, delivering iron, calcium, folate, and vitamins C and K in very few calories. The high antioxidant content combats oxidative stress and supports cardiovascular health.'},
+  {keys:['broccoli','cauliflower','brussels','brassica'],blurb:'Contains sulforaphane, a powerful compound with anti-inflammatory and cancer-preventive properties. High in vitamin C, fiber, and folate, supporting immune function and cellular repair.'},
+  {keys:['lentil','chickpea','black bean','bean','legume','edamame'],blurb:'An outstanding plant-based protein and fiber combination that promotes satiety and stabilizes blood sugar. Rich in folate, iron, and potassium, supporting heart health and sustained energy throughout the day.'},
+  {keys:['tofu','tempeh','seitan','soy'],blurb:'Complete plant-based proteins containing all essential amino acids, making them ideal meat alternatives. Isoflavones in soy support hormonal balance and have been linked to reduced cardiovascular risk.'},
+  {keys:['almond','walnut','cashew','pecan','nut','peanut'],blurb:'Dense in healthy unsaturated fats, vitamin E, and magnesium that support brain function and heart health. The combination of protein, fiber, and fat promotes satiety and helps regulate blood sugar between meals.'},
+  {keys:['blueberry','berry','strawberry','raspberry'],blurb:'Among the highest antioxidant foods available, with anthocyanins that protect against cellular damage and cognitive decline. Rich in vitamin C and fiber, supporting immune function and digestive health.'},
+  {keys:['banana'],blurb:'An excellent source of potassium and magnesium that prevent muscle cramps and support electrolyte balance. Natural sugars provide quick energy, while resistant starch feeds beneficial gut bacteria.'},
+  {keys:['pasta','noodle'],blurb:'A complex carbohydrate that replenishes glycogen stores after exercise, supporting recovery and next-day performance. When paired with protein and vegetables, provides a balanced macronutrient profile for sustained energy.'},
+  {keys:['hummus'],blurb:'Made from chickpeas and tahini, delivering plant protein, fiber, and healthy fats in one serving. Rich in iron, folate, and B vitamins that support energy metabolism and red blood cell production.'},
+  {keys:['olive oil'],blurb:'The cornerstone of the Mediterranean diet, rich in oleocanthal — a natural anti-inflammatory compound. Monounsaturated fats improve cholesterol ratios and enhance absorption of fat-soluble vitamins from vegetables.'},
+  {keys:['smoothie','smoothie bowl','açaí'],blurb:'A convenient way to concentrate multiple micronutrients, antioxidants, and phytonutrients in one meal. When balanced with protein and healthy fats, supports sustained energy, recovery, and immune function.'},
+  {keys:['salad'],blurb:'A fiber-rich meal that supports gut health, satiety, and micronutrient intake simultaneously. The variety of vegetables provides a broad spectrum of vitamins, minerals, and antioxidants that work synergistically.'},
+  {keys:['soup','stew','curry'],blurb:'Slow-cooked meals that enhance nutrient bioavailability and allow flavors from spices — many with anti-inflammatory properties — to develop fully. High water content supports hydration alongside solid nutrition.'},
+  {keys:['wrap','burrito','taco'],blurb:'A balanced meal format that combines protein, complex carbohydrates, and vegetables in one portable serving. When filled with whole ingredients, provides a complete macronutrient profile with sustained energy release.'},
+  {keys:['pancake','waffle','french toast'],blurb:'When made with whole grain flour and paired with protein, provides a balanced energy source for active mornings. Adding fruit boosts antioxidant content while natural sweetness reduces the need for added sugar.'},
+  {keys:['pork'],blurb:'An excellent source of thiamine (B1), essential for carbohydrate metabolism and nerve function. Lean cuts provide high-quality protein comparable to chicken, with zinc and selenium supporting immune health.'},
+  {keys:['cottage cheese'],blurb:'An outstanding slow-digesting casein protein source, ideal for muscle recovery and overnight satiety. High in calcium and phosphorus for bone health, with a low calorie density that supports weight management.'},
+  {keys:['falafel'],blurb:'Made from chickpeas and herbs, providing plant protein, fiber, and antioxidant-rich parsley and cilantro. A satisfying meal that supports gut health and provides steady energy without blood sugar spikes.'}
+];
+
+function getNutritionBlurb(mealStr){
+  const lower=(mealStr||'').toLowerCase();
+  for(const entry of NUTRITION_DB){
+    if(entry.keys.some(k=>lower.includes(k)))return entry.blurb;
+  }
+  // Fallback generic blurb
+  return'A balanced meal providing a mix of macronutrients to fuel your body and support your daily MEDS goals. Focus on eating slowly and mindfully to maximize digestion and satiety.';
+}
+
 function getMealSearchTerm(mealStr){
   // Strip "Breakfast:", "Lunch:", etc prefix
   const clean=mealStr.replace(/^(breakfast|lunch|dinner|snack)\s*:\s*/i,'').trim();
@@ -2513,23 +2552,6 @@ function makeMealCard(meal, mealIdx, dayIdx, onCheck, onEdit, isDone){
 
   const card=document.createElement('div');
   card.className='meal-card';
-
-  // Image area — use Unsplash source for food photos
-  const imgKey=searchTerm.toLowerCase().replace(/\s+/g,'-');
-  const imgUrl='https://source.unsplash.com/400x220/?food,'+encodeURIComponent(searchTerm);
-
-  const imgWrap=document.createElement('div');imgWrap.className='meal-card-img-placeholder';
-  imgWrap.innerHTML='<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="3" stroke="var(--muted)" stroke-width="1.5"/><circle cx="14" cy="14" r="4" stroke="var(--d)" stroke-width="1.5"/></svg>';
-
-  const img=document.createElement('img');
-  img.className='meal-card-img';
-  img.alt=dishName;
-  img.style.display='none';
-  img.onload=()=>{imgWrap.style.display='none';img.style.display='block';};
-  img.onerror=()=>{};
-  img.src=imgUrl;
-  card.appendChild(imgWrap);
-  card.appendChild(img);
 
   // Body
   const body=document.createElement('div');body.className='meal-card-body';
@@ -2559,14 +2581,21 @@ function makeMealCard(meal, mealIdx, dayIdx, onCheck, onEdit, isDone){
   top.appendChild(chk);top.appendChild(nameSpan);
   body.appendChild(top);
 
-  // Label pill
+  // Meal label (Breakfast / Lunch etc)
   if(label){
     const meta=document.createElement('div');meta.className='meal-card-meta';meta.style.marginLeft='24px';
     meta.textContent=label;body.appendChild(meta);
   }
 
+  // Nutrition blurb
+  const blurb=getNutritionBlurb(meal);
+  const blurbEl=document.createElement('p');
+  blurbEl.style.cssText='font-size:11px;color:var(--muted);line-height:1.6;margin:7px 0 8px;font-style:italic;';
+  blurbEl.textContent=blurb;
+  body.appendChild(blurbEl);
+
   // Recipe link
-  const linkRow=document.createElement('div');linkRow.style.cssText='margin-left:24px;margin-top:4px;';
+  const linkRow=document.createElement('div');linkRow.style.cssText='margin-top:4px;';
   const link=document.createElement('a');
   link.className='meal-card-recipe';
   link.href=recipeUrl;
