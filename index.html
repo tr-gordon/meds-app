@@ -10,6 +10,19 @@
 <link rel="apple-touch-icon" href="./icon.png">
 <meta name="theme-color" content="#0a0f0d">
 <title>MEDS — Daily Accountability</title>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "dc082893-e458-4e2f-a2c9-eb4426c09317",
+      serviceWorkerParam: { scope: "/meds-app/" },
+      serviceWorkerPath: "OneSignalSDKWorker.js",
+      notifyButton: { enable: false },
+      allowLocalhostAsSecureOrigin: true,
+    });
+  });
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap');
 
@@ -3380,20 +3393,39 @@ function saveNotifTime(k,val){
 }
 
 function toggleNotif(k,enabled){
-  if(enabled&&'Notification' in window&&Notification.permission==='default'){
-    Notification.requestPermission().then(p=>{
-      renderNotifSettings();
-      if(p==='granted'){
-        const settings=getNotifSettings();
-        if(!settings[k])settings[k]={};
-        settings[k].enabled=true;
-        saveNotifSettings(settings);
-        scheduleNotifications();
-        const tog=document.getElementById('ntog-'+k);
-        if(tog)tog.checked=true;
-      }
-    });
-    return;
+  if(enabled){
+    // Request via OneSignal first (more reliable on Android)
+    if(window.OneSignalDeferred){
+      OneSignalDeferred.push(async function(OneSignal){
+        try{
+          const granted=await OneSignal.Notifications.permission;
+          if(!granted)await OneSignal.Notifications.requestPermission();
+          const settings=getNotifSettings();
+          if(!settings[k])settings[k]={};
+          settings[k].enabled=true;
+          saveNotifSettings(settings);
+          scheduleNotifications();
+          renderNotifSettings();
+        }catch(e){}
+      });
+      return;
+    }
+    // Fallback to native permission
+    if('Notification' in window&&Notification.permission==='default'){
+      Notification.requestPermission().then(p=>{
+        renderNotifSettings();
+        if(p==='granted'){
+          const settings=getNotifSettings();
+          if(!settings[k])settings[k]={};
+          settings[k].enabled=true;
+          saveNotifSettings(settings);
+          scheduleNotifications();
+          const tog=document.getElementById('ntog-'+k);
+          if(tog)tog.checked=true;
+        }
+      });
+      return;
+    }
   }
   const settings=getNotifSettings();
   if(!settings[k])settings[k]={};
@@ -3457,10 +3489,8 @@ function notifySwChecked(){
 }
 
 function scheduleNotifications(){
-  if(!('Notification' in window)||Notification.permission!=='granted')return;
   const settings=getNotifSettings();
-
-  // Send to service worker — primary mechanism for background delivery
+  // Send to service worker as fallback
   if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
     navigator.serviceWorker.controller.postMessage({
       type:'SCHEDULE_NOTIFS',
@@ -3468,10 +3498,23 @@ function scheduleNotifications(){
       checked:S.checked
     });
   }
-
-  // In-page fallback timers (work while app is open/foreground)
+  // Tag user in OneSignal so server can target notifications
+  if(window.OneSignalDeferred){
+    OneSignalDeferred.push(async function(OneSignal){
+      const tags={};
+      ['m','e','d','s'].forEach(k=>{
+        const cfg=settings[k];
+        tags['notif_'+k]=cfg&&cfg.enabled?'1':'0';
+        tags['notif_'+k+'_time']=cfg&&cfg.time?cfg.time:'';
+        tags['checked_'+k]=S.checked[k]?'1':'0';
+      });
+      try{await OneSignal.User.addTags(tags);}catch(e){}
+    });
+  }
+  // In-page fallback timers (while app is open)
   if(window._notifTimers){window._notifTimers.forEach(t=>clearTimeout(t));}
   window._notifTimers=[];
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
   const now=new Date();
   ['m','e','d','s'].forEach(k=>{
     const cfg=settings[k];
@@ -3487,6 +3530,17 @@ function scheduleNotifications(){
       }
     },fire-now);
     window._notifTimers.push(t);
+  });
+}
+
+function initOneSignal(){
+  if(!window.OneSignalDeferred)return;
+  OneSignalDeferred.push(async function(OneSignal){
+    try{
+      const granted=await OneSignal.Notifications.permission;
+      if(!granted)await OneSignal.Notifications.requestPermission();
+      scheduleNotifications();
+    }catch(e){}
   });
 }
 
@@ -3523,6 +3577,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(isIOS&&!isStandalone&&S.profile){document.getElementById('install-banner').style.display='flex';}
   registerServiceWorker();
   scheduleNotifications();
+  initOneSignal();
 });
 </script>
 </body>
