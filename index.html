@@ -932,6 +932,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
             <div class="ai-card" style="margin-bottom:12px;">
               <p class="ai-tag">Today's meals</p>
               <p class="ai-text" id="diet-today-day-lbl"></p>
+              <p id="diet-today-cuisine" style="font-size:11px;color:var(--d);margin-top:2px;"></p>
             </div>
             <div id="diet-today-plan-list"></div>
             <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Tap any meal to edit it</p>
@@ -946,6 +947,20 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 
         <!-- WEEKLY MEAL -->
         <div id="mp-tab-week" style="display:none;">
+          <p class="field-lbl">Cuisine style <span style="color:var(--d);font-size:10px;letter-spacing:.03em;text-transform:none;">optional</span></p>
+          <div class="chip-row" id="cuisine-chips">
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Any','d')">Any</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Jamaican','d')">Jamaican</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Mediterranean','d')">Mediterranean</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Asian','d')">Asian</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Mexican','d')">Mexican</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Indian','d')">Indian</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','American','d')">American</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Middle Eastern','d')">Middle Eastern</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','West African','d')">West African</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Italian','d')">Italian</div>
+            <div class="chip" onclick="selChip(this,'wk-mcuisine','Japanese','d')">Japanese</div>
+          </div>
           <p class="field-lbl">Goals <span style="color:var(--d);font-size:10px;letter-spacing:.03em;text-transform:none;">select all that apply</span></p>
           <div class="chip-row">
             <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Lose weight','d')">Lose weight</div>
@@ -971,6 +986,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
             <div class="chip" onclick="selChip(this,'wk-mmeals','5','d')">5</div>
           </div>
           <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:14px;" onclick="generateWeeklyMeal()">Generate weekly meal plan</button>
+          <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px;" id="meal-gen-note">Select a cuisine + add an API key in Profile for AI-generated meal plans</p>
           <div class="food-loading" id="wk-meal-loading" style="display:none;">
             <div class="spinner" style="border-top-color:var(--d);"></div>
             <p style="color:var(--d);">Planning your week...</p>
@@ -1791,6 +1807,11 @@ function loadTodayMeal(){
   noPlan.style.display='none';
   fromPlan.style.display='block';
   document.getElementById('diet-today-day-lbl').textContent=todayFull+(todayEntry?'':' — no plan found');
+  // Show cuisine if set
+  const cuisine=S.weeklyMealPlan&&S.weeklyMealPlan.days&&S.weeklyMealPlan.days[0]&&S.weeklyMealPlan.days[0].cuisine;
+  const cuisineEl=document.getElementById('diet-today-cuisine');
+  if(cuisineEl)cuisineEl.textContent=cuisine&&cuisine!=='Any'?cuisine+' cuisine':'';
+
   const list=document.getElementById('diet-today-plan-list');
   list.innerHTML='';
 
@@ -2239,16 +2260,205 @@ const WK_MEALS={
   }
 };
 
-function buildWeeklyMealPlan(goals,pref,mealsPerDay){
-  const prefKey=WK_MEALS[pref]?pref:'No restriction';
+// Cuisine-specific meal library — each cuisine has 7 days of meals per goal
+const CUISINE_MEALS={
+  Jamaican:{
+    default:[
+      ['Breakfast: Ackee & saltfish with boiled dumpling','Lunch: Jerk chicken & rice & peas','Dinner: Brown stew fish & steamed cabbage'],
+      ['Breakfast: Cornmeal porridge & banana','Lunch: Curry goat & white rice','Dinner: Escovitch fish & festival'],
+      ['Breakfast: Callaloo & boiled green banana','Lunch: Oxtail stew & butter beans','Dinner: Jerk pork & roasted breadfruit'],
+      ['Breakfast: Saltfish fritters & mint tea','Lunch: Stew chicken & rice & peas','Dinner: Steamed fish & bammy'],
+      ['Breakfast: Plantain porridge','Lunch: Pepper pot soup & hard dough bread','Dinner: Curry chicken & roti'],
+      ['Breakfast: Boiled banana & ackee','Lunch: Jerk fish & festival','Dinner: Brown stew chicken & rice & peas'],
+      ['Breakfast: Cornmeal pudding','Lunch: Mannish water soup','Dinner: Roast breadfruit & ackee']
+    ],
+    'Build muscle':[
+      ['Breakfast: Ackee & saltfish with boiled eggs','Lunch: Jerk chicken breast & brown rice & peas','Dinner: Brown stew fish & ground provision','Snack: Peanut punch'],
+      ['Breakfast: Cornmeal porridge with protein powder','Lunch: Curry goat & rice','Dinner: Baked jerk chicken & sweet potato','Snack: Roasted pumpkin seeds'],
+      ['Breakfast: Callaloo omelette & whole grain toast','Lunch: Stew chicken & quinoa','Dinner: Steamed snapper & bammy','Snack: Coconut water & almonds'],
+      ['Breakfast: Plantain & scrambled eggs','Lunch: Oxtail stew & brown rice','Dinner: Jerk turkey breast & roasted veg','Snack: Protein shake'],
+      ['Breakfast: Saltfish & boiled yam','Lunch: Curry chicken & rice & peas','Dinner: Grilled jerk fish & roasted breadfruit','Snack: Hard-boiled eggs'],
+      ['Breakfast: Cornmeal porridge & banana','Lunch: Pepper pot soup & whole grain bread','Dinner: Jerk pork tenderloin & steamed callaloo','Snack: Peanut butter & banana'],
+      ['Breakfast: Ackee & boiled eggs','Lunch: Brown stew chicken & sweet potato','Dinner: Escovitch red snapper & steamed veg','Snack: Coconut & nuts']
+    ]
+  },
+  Mediterranean:{
+    default:[
+      ['Breakfast: Greek yogurt, honey & walnuts','Lunch: Grilled chicken souvlaki & tzatziki','Dinner: Baked sea bass & roasted veg'],
+      ['Breakfast: Shakshuka with feta','Lunch: Hummus & falafel wrap','Dinner: Lamb kofta & tabbouleh'],
+      ['Breakfast: Avocado toast & olive oil','Lunch: Greek salad & grilled halloumi','Dinner: Lemon herb salmon & couscous'],
+      ['Breakfast: Labneh & za\'atar flatbread','Lunch: Lentil & vegetable soup','Dinner: Stuffed grape leaves & rice'],
+      ['Breakfast: Oats with figs & pistachios','Lunch: Chicken shawarma wrap','Dinner: Grilled swordfish & ratatouille'],
+      ['Breakfast: Eggs & tomatoes with olive oil','Lunch: Pita & mezze platter','Dinner: Moussaka with side salad'],
+      ['Breakfast: Fruit & nut bowl with honey','Lunch: Fattoush salad & grilled chicken','Dinner: Baked branzino & roasted peppers']
+    ],
+    'Lose weight':[
+      ['Breakfast: Greek yogurt & berries','Lunch: Grilled chicken salad with lemon dressing','Dinner: Baked sea bass & steamed greens'],
+      ['Breakfast: Shakshuka with vegetables','Lunch: Hummus & veggie wrap','Dinner: Grilled lamb skewers & tabbouleh'],
+      ['Breakfast: Avocado & poached eggs','Lunch: Lentil soup & rye bread','Dinner: Lemon herb salmon & asparagus'],
+      ['Breakfast: Labneh & cucumber on rye','Lunch: Greek salad with sardines','Dinner: Stuffed peppers with quinoa'],
+      ['Breakfast: Oats with almonds & honey','Lunch: Chicken & vegetable soup','Dinner: Grilled swordfish & ratatouille'],
+      ['Breakfast: Soft-boiled eggs & tomatoes','Lunch: Fattoush salad & grilled fish','Dinner: Baked chicken & roasted veg'],
+      ['Breakfast: Fruit bowl with labneh','Lunch: Grilled halloumi & grain bowl','Dinner: Baked cod & steamed courgette']
+    ]
+  },
+  Asian:{
+    default:[
+      ['Breakfast: Congee with ginger & scallion','Lunch: Chicken teriyaki & steamed rice','Dinner: Salmon sashimi & miso soup'],
+      ['Breakfast: Dim sum & jasmine tea','Lunch: Pad Thai with tofu','Dinner: Korean bibimbap'],
+      ['Breakfast: Miso soup & rice','Lunch: Vietnamese pho with beef','Dinner: Thai green curry & jasmine rice'],
+      ['Breakfast: Jook with century egg','Lunch: Japanese ramen & soft egg','Dinner: Stir-fry beef & bok choy'],
+      ['Breakfast: Steamed buns & soy milk','Lunch: Korean bibimbap','Dinner: Teriyaki salmon & edamame rice'],
+      ['Breakfast: Tamago gohan','Lunch: Thai basil chicken & rice','Dinner: Japanese gyoza & miso soup'],
+      ['Breakfast: Oatmeal with miso & scallion','Lunch: Vermicelli bowl with shrimp','Dinner: Korean galbi & steamed veg']
+    ],
+    'Build muscle':[
+      ['Breakfast: Congee with boiled eggs & tofu','Lunch: Chicken teriyaki & brown rice & edamame','Dinner: Salmon & soba noodle bowl','Snack: Edamame & soy sauce'],
+      ['Breakfast: Oats with matcha & banana','Lunch: Beef bulgogi & rice & kimchi','Dinner: Thai basil chicken & steamed rice','Snack: Protein miso soup'],
+      ['Breakfast: Tamago gohan with extra eggs','Lunch: Vietnamese pho with extra beef','Dinner: Stir-fry tofu & brown rice','Snack: Roasted seaweed & almonds'],
+      ['Breakfast: Miso soup & salmon rice ball','Lunch: Korean bibimbap with extra beef','Dinner: Teriyaki salmon & soba','Snack: Edamame'],
+      ['Breakfast: Egg fried rice & green tea','Lunch: Thai green curry & brown rice','Dinner: Japanese gyudon beef bowl','Snack: Roasted pumpkin seeds'],
+      ['Breakfast: Congee with chicken & ginger','Lunch: Grilled chicken bao bun','Dinner: Salmon teriyaki & rice & veg','Snack: Banana & peanut butter'],
+      ['Breakfast: Oatmeal with sesame & honey','Lunch: Korean doenjang jjigae with beef','Dinner: Prawn pad thai','Snack: Protein shake']
+    ]
+  },
+  Mexican:{
+    default:[
+      ['Breakfast: Huevos rancheros & salsa','Lunch: Chicken burrito bowl','Dinner: Fish tacos & mango salsa'],
+      ['Breakfast: Chilaquiles with crema','Lunch: Carnitas tacos & pico de gallo','Dinner: Enchiladas verdes'],
+      ['Breakfast: Avocado toast & pinto beans','Lunch: Grilled chicken fajita wrap','Dinner: Mole chicken & rice'],
+      ['Breakfast: Tamales & coffee','Lunch: Shrimp & avocado tostada','Dinner: Beef birria & consomé'],
+      ['Breakfast: Molletes with beans & cheese','Lunch: Veggie quesadilla & guac','Dinner: Caldo de pollo'],
+      ['Breakfast: Oatmeal atole','Lunch: Chicken torta & black beans','Dinner: Chiles rellenos'],
+      ['Breakfast: Fruit with tajín','Lunch: Grilled fish tacos','Dinner: Pozole rojo with chicken']
+    ],
+    'Lose weight':[
+      ['Breakfast: Egg white & veggie omelette with salsa','Lunch: Grilled chicken salad with lime dressing','Dinner: Fish tacos with cabbage slaw'],
+      ['Breakfast: Avocado & egg on corn tortilla','Lunch: Black bean soup','Dinner: Grilled shrimp & vegetable fajitas'],
+      ['Breakfast: Greek yogurt with chia & berries','Lunch: Chicken & veggie burrito bowl no rice','Dinner: Zucchini enchiladas'],
+      ['Breakfast: Smoothie with mango & spinach','Lunch: Tuna tostada & pico','Dinner: Grilled fish & roasted jalapeño veg'],
+      ['Breakfast: Oatmeal with cinnamon & berries','Lunch: Chicken soup with vegetables','Dinner: Grilled chicken & black bean salad'],
+      ['Breakfast: Scrambled eggs & salsa verde','Lunch: Shrimp ceviche & jicama','Dinner: Baked tilapia & cauliflower rice'],
+      ['Breakfast: Fruit & cottage cheese','Lunch: Veggie quesadilla light cheese','Dinner: Chicken pozole verde']
+    ]
+  },
+  Indian:{
+    default:[
+      ['Breakfast: Idli & sambar','Lunch: Chicken tikka masala & basmati rice','Dinner: Dal makhani & garlic naan'],
+      ['Breakfast: Poha & masala chai','Lunch: Lamb biryani','Dinner: Palak paneer & roti'],
+      ['Breakfast: Upma & coconut chutney','Lunch: Butter chicken & jeera rice','Dinner: Chole & bhatura'],
+      ['Breakfast: Paratha & pickle','Lunch: Prawn masala & rice','Dinner: Aloo gobi & chapati'],
+      ['Breakfast: Dosa & coconut chutney','Lunch: Mutton keema & peas','Dinner: Rajma chawal'],
+      ['Breakfast: Sabudana khichdi','Lunch: Fish curry & rice','Dinner: Baingan bharta & roti'],
+      ['Breakfast: Besan chilla & yogurt','Lunch: Paneer butter masala & naan','Dinner: Dal tadka & rice']
+    ],
+    'Lose weight':[
+      ['Breakfast: Idli & sambar no oil','Lunch: Grilled tandoori chicken & salad','Dinner: Moong dal & steamed rice'],
+      ['Breakfast: Oats upma with veg','Lunch: Chicken & vegetable curry light gravy','Dinner: Palak dal & roti'],
+      ['Breakfast: Yogurt & fruit bowl','Lunch: Fish tikka & cucumber raita','Dinner: Vegetable khichdi'],
+      ['Breakfast: Besan chilla & mint chutney','Lunch: Lentil soup & rye bread','Dinner: Grilled fish & roasted veg with spices'],
+      ['Breakfast: Sprouts salad & green tea','Lunch: Chicken shorba soup','Dinner: Methi dal & small roti'],
+      ['Breakfast: Ragi porridge','Lunch: Tandoori fish & salad','Dinner: Mixed vegetable sabzi & chapati'],
+      ['Breakfast: Smoothie with turmeric & ginger','Lunch: Rajma & steamed rice small portion','Dinner: Stir-fry vegetables Indian spices']
+    ]
+  },
+  American:{
+    default:[
+      ['Breakfast: Pancakes & maple syrup','Lunch: Classic burger & sweet potato fries','Dinner: BBQ ribs & coleslaw'],
+      ['Breakfast: Eggs Benedict','Lunch: BLT sandwich & chips','Dinner: Grilled steak & mashed potato'],
+      ['Breakfast: Waffles & fruit','Lunch: Caesar salad & grilled chicken','Dinner: Mac & cheese & green beans'],
+      ['Breakfast: Avocado toast & poached eggs','Lunch: Turkey club sandwich','Dinner: Meatloaf & roasted potatoes'],
+      ['Breakfast: Oatmeal & berries','Lunch: Cobb salad','Dinner: Grilled salmon & corn on the cob'],
+      ['Breakfast: Bagel with cream cheese','Lunch: Chicken wrap & fries','Dinner: BBQ chicken & baked beans'],
+      ['Breakfast: French toast & bacon','Lunch: Tuna melt & soup','Dinner: Shrimp & grits']
+    ]
+  },
+  'Middle Eastern':{
+    default:[
+      ['Breakfast: Labneh & za\'atar with pita','Lunch: Chicken shawarma wrap','Dinner: Lamb kofta & tabbouleh'],
+      ['Breakfast: Foul medames & boiled eggs','Lunch: Falafel & hummus plate','Dinner: Grilled hamour & rice pilaf'],
+      ['Breakfast: Shakshuka with pita','Lunch: Fattoush salad & grilled chicken','Dinner: Stuffed grape leaves & yogurt'],
+      ['Breakfast: Manakish & mint tea','Lunch: Chicken & lentil soup','Dinner: Mansaf with lamb & jameed'],
+      ['Breakfast: Date & nut bowl','Lunch: Shawarma rice bowl','Dinner: Baked fish & roasted veg with sumac'],
+      ['Breakfast: Eggs with halloumi & tomatoes','Lunch: Mezze platter & pita','Dinner: Slow-cooked lamb shoulder & freekeh'],
+      ['Breakfast: Ful & pita bread','Lunch: Chicken kafta & tabbouleh','Dinner: Musakhan chicken & flatbread']
+    ]
+  },
+  'West African':{
+    default:[
+      ['Breakfast: Akara & pap','Lunch: Jollof rice & grilled chicken','Dinner: Egusi soup & fufu'],
+      ['Breakfast: Bread & groundnut stew','Lunch: Thieboudienne fish & rice','Dinner: Pepper soup & pounded yam'],
+      ['Breakfast: Ogi & fried plantain','Lunch: Suya beef & yam','Dinner: Okra soup & eba'],
+      ['Breakfast: Chin chin & tea','Lunch: Groundnut soup & rice','Dinner: Banga soup & starch'],
+      ['Breakfast: Moi moi & custard','Lunch: Kelewele & black-eyed peas','Dinner: Afang soup & fufu'],
+      ['Breakfast: Fried yam & egg sauce','Lunch: Jollof rice & fried fish','Dinner: Light soup & banku'],
+      ['Breakfast: Tom brown porridge','Lunch: Ndolé & plantain','Dinner: Pepper chicken & boiled yam']
+    ]
+  },
+  Italian:{
+    default:[
+      ['Breakfast: Cornetto & cappuccino','Lunch: Pasta al pomodoro','Dinner: Osso buco & risotto Milanese'],
+      ['Breakfast: Bruschetta & espresso','Lunch: Margherita pizza','Dinner: Saltimbocca & sautéed spinach'],
+      ['Breakfast: Yogurt & granola','Lunch: Penne arrabbiata','Dinner: Branzino al forno & roasted veg'],
+      ['Breakfast: Frittata & toast','Lunch: Minestrone soup & bread','Dinner: Chicken piccata & linguine'],
+      ['Breakfast: Sfogliatella & latte','Lunch: Caprese salad & grilled fish','Dinner: Lamb ragu & pappardelle'],
+      ['Breakfast: Ricotta toast & fruit','Lunch: Gnocchi al pesto','Dinner: Grilled sea bream & caponata'],
+      ['Breakfast: Overnight oats Italian style','Lunch: Ribollita soup','Dinner: Spaghetti alle vongole']
+    ],
+    'Lose weight':[
+      ['Breakfast: Greek yogurt & berries','Lunch: Grilled chicken & caprese salad','Dinner: Baked branzino & steamed veg'],
+      ['Breakfast: Frittata with vegetables','Lunch: Minestrone soup','Dinner: Grilled swordfish & ratatouille'],
+      ['Breakfast: Ricotta & fruit bowl','Lunch: Panzanella salad & grilled fish','Dinner: Chicken piccata & green beans'],
+      ['Breakfast: Poached eggs & tomatoes','Lunch: Lentil soup with rosemary','Dinner: Branzino al forno & asparagus'],
+      ['Breakfast: Oatmeal with figs & honey','Lunch: Grilled halloumi & arugula salad','Dinner: Baked chicken & roasted peppers'],
+      ['Breakfast: Smoothie with espresso','Lunch: Tuna & white bean salad','Dinner: Grilled lamb chops & sautéed greens'],
+      ['Breakfast: Soft boiled eggs & tomato','Lunch: Ribollita soup','Dinner: Grilled sea bream & caponata']
+    ]
+  },
+  Japanese:{
+    default:[
+      ['Breakfast: Tamago gohan & miso soup','Lunch: Chicken katsu curry & rice','Dinner: Salmon sashimi & miso soup'],
+      ['Breakfast: Okayu & pickled vegetables','Lunch: Tonkotsu ramen','Dinner: Grilled mackerel & rice'],
+      ['Breakfast: Natto & rice','Lunch: Bento box with onigiri','Dinner: Shabu-shabu with dipping sauce'],
+      ['Breakfast: Tamagoyaki & rice','Lunch: Soba noodle bowl','Dinner: Beef sukiyaki & rice'],
+      ['Breakfast: Miso soup & rice','Lunch: Chirashi sushi bowl','Dinner: Grilled teriyaki chicken & edamame'],
+      ['Breakfast: Oats with matcha & banana','Lunch: Katsu sando sandwich','Dinner: Salmon teriyaki & steamed rice'],
+      ['Breakfast: Tofu scramble & miso soup','Lunch: Japanese curry & rice','Dinner: Grilled yellowtail & daikon salad']
+    ]
+  }
+};
+
+function getCuisineMeals(cuisine,goal){
+  const c=CUISINE_MEALS[cuisine];
+  if(!c)return null;
+  // Try goal-specific first, fall back to default
+  return c[goal]||c.default||null;
+}
+
+function buildWeeklyMealPlan(goals,pref,mealsPerDay,cuisine){
+  const dayNames=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const numMeals=parseInt(mealsPerDay)||3;
   const goalList=goals.split(' + ').filter(Boolean);
   const primaryGoal=goalList[0]||'Eat cleaner';
+
+  // If specific cuisine selected, use cuisine database
+  if(cuisine&&cuisine!=='Any'){
+    const cuisineDays=getCuisineMeals(cuisine,primaryGoal);
+    if(cuisineDays){
+      return{days:dayNames.map((name,i)=>{
+        const dayMeals=cuisineDays[i%cuisineDays.length];
+        return{day:name,meals:dayMeals.slice(0,numMeals),cuisine};
+      })};
+    }
+  }
+
+  // Default: use WK_MEALS static database
+  const prefKey=WK_MEALS[pref]?pref:'No restriction';
   const goalKey=WK_MEALS[prefKey][primaryGoal]?primaryGoal:'Eat cleaner';
-  const dayNames=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const mealData=WK_MEALS[prefKey][goalKey];
   return{days:dayNames.map((name,i)=>{
     const dayMeals=mealData[i%mealData.length];
-    return{day:name,meals:dayMeals.slice(0,parseInt(mealsPerDay)||3)};
+    return{day:name,meals:dayMeals.slice(0,numMeals)};
   })};
 }
 
@@ -2303,15 +2513,62 @@ function generateWeeklyWorkout(){
   },300);
 }
 
-function generateWeeklyMeal(){
+async function generateWeeklyMeal(){
   const goal=getMulti('wk-mgoal','Eat cleaner');
   const pref=chips['wk-mpref']||'No restriction';
   const meals=chips['wk-mmeals']||'3';
+  const cuisine=chips['wk-mcuisine']||'Any';
   document.getElementById('wk-meal-loading').style.display='block';
   document.getElementById('weekly-meal-result').style.display='none';
+
+  // If a specific cuisine is selected and API key exists, use AI
+  const key=getApiKey();
+  if(cuisine!=='Any'&&key){
+    try{
+      const mealsPerDay=parseInt(meals)||3;
+      const mealLabels=mealsPerDay===2?['Breakfast','Dinner']:mealsPerDay===3?['Breakfast','Lunch','Dinner']:mealsPerDay===4?['Breakfast','Lunch','Dinner','Snack']:['Breakfast','Morning snack','Lunch','Afternoon snack','Dinner'];
+      const prompt=`Generate a 7-day ${cuisine} cuisine meal plan for someone with these goals: ${goal}. Dietary preference: ${pref}. ${mealsPerDay} meals per day: ${mealLabels.join(', ')}.
+
+Return ONLY valid JSON, no markdown:
+{
+  "days": [
+    {"day":"Monday","meals":["Breakfast: dish name","Lunch: dish name","Dinner: dish name"]},
+    {"day":"Tuesday","meals":[...]},
+    {"day":"Wednesday","meals":[...]},
+    {"day":"Thursday","meals":[...]},
+    {"day":"Friday","meals":[...]},
+    {"day":"Saturday","meals":[...]},
+    {"day":"Sunday","meals":[...]}
+  ]
+}
+
+Rules:
+- Each meal must be a real ${cuisine} dish or ${cuisine}-inspired dish
+- Keep dish names concise (3-6 words max)
+- Format: "MealLabel: Dish name"
+- Vary dishes across the week — no repeats
+- Respect the ${pref} dietary preference strictly`;
+
+      const text=await callVisionAPIText(prompt);
+      const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+      if(parsed.days&&parsed.days.length===7){
+        S.weeklyMealPlan=parsed;
+        S.groceryList=null;
+        document.getElementById('grocery-list').innerHTML='';
+        saveStateLS(S);
+        renderWeeklyMeal(parsed);
+        document.getElementById('wk-meal-loading').style.display='none';
+        return;
+      }
+    }catch(e){
+      // Fall through to static plan
+    }
+  }
+
+  // Static fallback (no API key or 'Any' cuisine)
   setTimeout(()=>{
     try{
-      const plan=buildWeeklyMealPlan(goal,pref,meals);
+      const plan=buildWeeklyMealPlan(goal,pref,meals,cuisine);
       S.weeklyMealPlan=plan;
       S.groceryList=null;
       document.getElementById('grocery-list').innerHTML='';
@@ -2447,6 +2704,22 @@ function makeExerciseRow(ex,logKey,onToggle){
     }
     if(fields.children.length)row.appendChild(fields);
   }
+
+  // How-to link — skip for rest, note, and generic cardio with no specific technique
+  if(type!=='rest'&&type!=='note'&&type!=='cardio'){
+    const linkRow=document.createElement('div');
+    linkRow.style.cssText='margin-left:24px;margin-top:5px;';
+    const ytQuery=encodeURIComponent('how to do '+name+' exercise proper form');
+    const link=document.createElement('a');
+    link.href='https://www.youtube.com/results?search_query='+ytQuery;
+    link.target='_blank';
+    link.rel='noopener';
+    link.style.cssText='display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#e05a5a;text-decoration:none;border:1px solid #e05a5a;border-radius:20px;padding:3px 10px;';
+    link.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><polygon points="3,1 9,5 3,9" fill="#e05a5a"/></svg> How to';
+    linkRow.appendChild(link);
+    row.appendChild(linkRow);
+  }
+
   return row;
 }
 
