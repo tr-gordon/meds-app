@@ -292,6 +292,20 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 .meal-card-recipe{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--d);text-decoration:none;border:1px solid var(--d);border-radius:20px;padding:3px 10px;cursor:pointer;}
 .meal-card-recipe:active{opacity:.7;}
 
+.achievement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;}
+.badge{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;transition:border-color .2s;}
+.badge.unlocked{border-color:var(--e-bg);background:var(--bg3);}
+.badge.locked{opacity:.45;}
+.badge-icon{font-size:24px;margin-bottom:6px;filter:grayscale(0);}
+.badge.locked .badge-icon{filter:grayscale(1);}
+.badge-name{font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px;line-height:1.3;}
+.badge-desc{font-size:9px;color:var(--muted);line-height:1.4;}
+.badge-progress{width:100%;height:3px;background:var(--faint);border-radius:2px;margin-top:6px;overflow:hidden;}
+.badge-progress-fill{height:100%;background:var(--e);border-radius:2px;transition:width .5s;}
+.badge-unlocked-date{font-size:9px;color:var(--e);margin-top:4px;}
+.achievements-summary{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.achievements-summary-count{font-size:22px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--e);}
+
 /* SCORE COLORS */
 .score-green .score-fill{background:var(--e);}
 .score-amber .score-fill{background:var(--d);}
@@ -492,7 +506,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
         <p class="greeting" id="top-greeting">good morning</p>
         <p class="top-title">Your <span>MEDS</span></p>
       </div>
-      <span class="streak-pill"><span class="streak-dot"></span><span id="streak-n">0</span> day streak</span>
+      <span class="streak-pill" onclick="showTab('trends',document.querySelector('.nb:nth-child(2)'));setTimeout(()=>document.getElementById('achievements-section').scrollIntoView({behavior:'smooth'}),200);" style="cursor:pointer;"><span class="streak-dot"></span><span id="streak-n">0</span> day streak</span>
     </div>
     <p class="date-lbl" id="date-lbl"></p>
   </div>
@@ -593,6 +607,10 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
       </div>
       <p class="sec-lbl" style="color:var(--d);">Diet log — this week</p>
       <div id="diet-trends-list"></div>
+      <div id="achievements-section" style="margin-top:18px;">
+        <p class="sec-lbl">Achievements</p>
+        <div id="achievements-grid"></div>
+      </div>
     </div>
 
     <!-- COACH -->
@@ -3889,7 +3907,121 @@ function persistToday(){
   if(S.history.length>60)S.history=S.history.slice(-60);
   saveStateLS(S);
   notifySwChecked();
+  checkAndUnlockAchievements();
 }
+
+// ── ACHIEVEMENTS ────────────────────────────────────────────
+const ACHIEVEMENTS=[
+  // Streak badges
+  {id:'streak_3',icon:'🔥',name:'Getting started',desc:'3-day streak',category:'streak',check:s=>s.streak>=3,progress:s=>({val:Math.min(s.streak,3),max:3})},
+  {id:'streak_7',icon:'⚡',name:'One week',desc:'7-day streak',category:'streak',check:s=>s.streak>=7,progress:s=>({val:Math.min(s.streak,7),max:7})},
+  {id:'streak_14',icon:'💫',name:'Two weeks',desc:'14-day streak',category:'streak',check:s=>s.streak>=14,progress:s=>({val:Math.min(s.streak,14),max:14})},
+  {id:'streak_30',icon:'🌙',name:'One month',desc:'30-day streak',category:'streak',check:s=>s.streak>=30,progress:s=>({val:Math.min(s.streak,30),max:30})},
+  {id:'streak_60',icon:'🏔️',name:'Mountain',desc:'60-day streak',category:'streak',check:s=>s.streak>=60,progress:s=>({val:Math.min(s.streak,60),max:60})},
+  {id:'streak_100',icon:'💎',name:'Diamond',desc:'100-day streak',category:'streak',check:s=>s.streak>=100,progress:s=>({val:Math.min(s.streak,100),max:100})},
+
+  // Score badges
+  {id:'score_first',icon:'⭐',name:'First score',desc:'Log all 4 pillars',category:'score',check:s=>s.history.some(h=>h.score),progress:s=>({val:s.history.some(h=>h.score)?1:0,max:1})},
+  {id:'score_8',icon:'🌟',name:'High scorer',desc:'Score 8+ in a day',category:'score',check:s=>s.history.some(h=>h.score>=8),progress:s=>({val:s.history.filter(h=>h.score>=8).length,max:1})},
+  {id:'score_perfect',icon:'✨',name:'Perfect day',desc:'Score 10/10',category:'score',check:s=>s.history.some(h=>h.score>=10),progress:s=>({val:s.history.filter(h=>h.score>=10).length,max:1})},
+  {id:'score_7days',icon:'🎯',name:'Consistent',desc:'Score 7+ for 7 days',category:'score',check:s=>{
+    const r=s.history.filter(h=>h.score>=7);let best=0,cur=0;
+    s.history.forEach(h=>{h.score>=7?cur++:cur=0;best=Math.max(best,cur);});return best>=7;
+  },progress:s=>{let best=0,cur=0;s.history.forEach(h=>{h.score>=7?cur++:cur=0;best=Math.max(best,cur);});return{val:Math.min(best,7),max:7};}},
+
+  // Pillar badges
+  {id:'med_7',icon:'🧘',name:'Mindful week',desc:'Meditate 7 days',category:'meditation',check:s=>s.history.filter(h=>h.checked&&h.checked.m).length>=7,progress:s=>({val:Math.min(s.history.filter(h=>h.checked&&h.checked.m).length,7),max:7})},
+  {id:'med_30',icon:'🪷',name:'Meditation master',desc:'30 meditation sessions',category:'meditation',check:s=>s.history.filter(h=>h.checked&&h.checked.m).length>=30,progress:s=>({val:Math.min(s.history.filter(h=>h.checked&&h.checked.m).length,30),max:30})},
+  {id:'ex_7',icon:'💪',name:'Active week',desc:'Exercise 7 days',category:'exercise',check:s=>s.history.filter(h=>h.checked&&h.checked.e).length>=7,progress:s=>({val:Math.min(s.history.filter(h=>h.checked&&h.checked.e).length,7),max:7})},
+  {id:'ex_30',icon:'🏋️',name:'Iron will',desc:'30 workout sessions',category:'exercise',check:s=>s.history.filter(h=>h.checked&&h.checked.e).length>=30,progress:s=>({val:Math.min(s.history.filter(h=>h.checked&&h.checked.e).length,30),max:30})},
+  {id:'diet_7',icon:'🥗',name:'Clean week',desc:'Log diet 7 days',category:'diet',check:s=>s.history.filter(h=>h.checked&&h.checked.d).length>=7,progress:s=>({val:Math.min(s.history.filter(h=>h.checked&&h.checked.d).length,7),max:7})},
+  {id:'sleep_7',icon:'😴',name:'Rest week',desc:'Log sleep 7 days',category:'sleep',check:s=>s.history.filter(h=>h.checked&&h.checked.s).length>=7,progress:s=>({val:Math.min(s.history.filter(h=>h.checked&&h.checked.s).length,7),max:7})},
+  {id:'sleep_great',icon:'🌛',name:'Deep rest',desc:'5 nights of great sleep',category:'sleep',check:s=>s.history.filter(h=>h.details&&h.details.squal==='Great').length>=5,progress:s=>({val:Math.min(s.history.filter(h=>h.details&&h.details.squal==='Great').length,5),max:5})},
+
+  // Special badges
+  {id:'full_meds',icon:'💊',name:'Full MEDS',desc:'Complete all 4 pillars',category:'special',check:s=>s.history.some(h=>h.checked&&Object.values(h.checked).every(Boolean)),progress:s=>({val:s.history.some(h=>h.checked&&Object.values(h.checked).every(Boolean))?1:0,max:1})},
+  {id:'full_meds_7',icon:'🏆',name:'MEDS champion',desc:'Full MEDS 7 days in a row',category:'special',check:s=>{let cur=0,best=0;s.history.forEach(h=>{Object.values(h.checked||{}).every(Boolean)?cur++:cur=0;best=Math.max(best,cur);});return best>=7;},progress:s=>{let cur=0,best=0;s.history.forEach(h=>{Object.values(h.checked||{}).every(Boolean)?cur++:cur=0;best=Math.max(best,cur);});return{val:Math.min(best,7),max:7};}},
+  {id:'early_bird',icon:'🌅',name:'Early bird',desc:'Log sleep before 10pm 5 times',category:'special',check:s=>s.history.filter(h=>h.details&&(h.details.sbed==='Before 9pm'||h.details.sbed==='9–10pm')).length>=5,progress:s=>({val:Math.min(s.history.filter(h=>h.details&&(h.details.sbed==='Before 9pm'||h.details.sbed==='9–10pm')).length,5),max:5})},
+  {id:'long_med',icon:'🕰️',name:'Deep dive',desc:'Meditate 30+ minutes',category:'special',check:s=>s.history.some(h=>h.details&&parseInt(h.details.medDur||0)>=30),progress:s=>({val:s.history.some(h=>h.details&&parseInt(h.details.medDur||0)>=30)?1:0,max:1})},
+];
+
+function getUnlockedAchievements(){
+  const saved=JSON.parse(localStorage.getItem('meds-achievements')||'{}');
+  return saved;
+}
+
+function checkAndUnlockAchievements(){
+  const saved=getUnlockedAchievements();
+  const newlyUnlocked=[];
+  ACHIEVEMENTS.forEach(a=>{
+    if(!saved[a.id]&&a.check(S)){
+      saved[a.id]=Date.now();
+      newlyUnlocked.push(a);
+    }
+  });
+  if(newlyUnlocked.length){
+    localStorage.setItem('meds-achievements',JSON.stringify(saved));
+    // Show toast for each new achievement
+    newlyUnlocked.forEach((a,i)=>setTimeout(()=>showAchievementToast(a),i*1200));
+  }
+  return saved;
+}
+
+function showAchievementToast(a){
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg);border:1px solid var(--e);border-radius:var(--radius);padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:9999;opacity:0;transition:all .4s;box-shadow:0 4px 20px rgba(0,0,0,.3);min-width:220px;';
+  toast.innerHTML=`<span style="font-size:22px;">${a.icon}</span><div><div style="font-size:12px;font-weight:500;color:var(--e);">Achievement unlocked!</div><div style="font-size:11px;color:var(--text);">${a.name} — ${a.desc}</div></div>`;
+  document.body.appendChild(toast);
+  setTimeout(()=>{toast.style.opacity='1';toast.style.transform='translateX(-50%) translateY(0)';},50);
+  setTimeout(()=>{toast.style.opacity='0';toast.style.transform='translateX(-50%) translateY(-10px)';setTimeout(()=>toast.remove(),400);},3500);
+}
+
+function renderAchievements(){
+  const grid=document.getElementById('achievements-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  const unlocked=checkAndUnlockAchievements();
+  const unlockedCount=Object.keys(unlocked).length;
+  const total=ACHIEVEMENTS.length;
+
+  // Summary bar
+  const summary=document.createElement('div');
+  summary.className='achievements-summary';
+  summary.innerHTML=`<div><div class="achievements-summary-count">${unlockedCount}<span style="font-size:14px;color:var(--muted);">/${total}</span></div><div style="font-size:11px;color:var(--muted);">badges earned</div></div>
+    <div style="flex:1;margin:0 16px;"><div style="height:5px;background:var(--faint);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${Math.round((unlockedCount/total)*100)}%;background:var(--e);border-radius:3px;transition:width .6s;"></div></div><div style="font-size:10px;color:var(--muted);margin-top:4px;">${Math.round((unlockedCount/total)*100)}% complete</div></div>
+    <div style="font-size:11px;color:var(--muted);text-align:right;">${S.streak} day<br>streak 🔥</div>`;
+  grid.appendChild(summary);
+
+  // Sort: unlocked first, then by progress
+  const sorted=[...ACHIEVEMENTS].sort((a,b)=>{
+    const au=!!unlocked[a.id],bu=!!unlocked[b.id];
+    if(au!==bu)return bu-au;
+    const ap=a.progress(S),bp=b.progress(S);
+    return(bp.val/bp.max)-(ap.val/ap.max);
+  });
+
+  const badgeGrid=document.createElement('div');
+  badgeGrid.className='achievement-grid';
+
+  sorted.forEach(a=>{
+    const isUnlocked=!!unlocked[a.id];
+    const prog=a.progress(S);
+    const pct=Math.round((prog.val/prog.max)*100);
+    const dateStr=isUnlocked?new Date(unlocked[a.id]).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+
+    const badge=document.createElement('div');
+    badge.className='badge'+(isUnlocked?' unlocked':' locked');
+    badge.innerHTML=`<div class="badge-icon">${a.icon}</div>
+      <div class="badge-name">${a.name}</div>
+      <div class="badge-desc">${a.desc}</div>
+      ${isUnlocked?`<div class="badge-unlocked-date">✓ ${dateStr}</div>`:
+        `<div class="badge-progress"><div class="badge-progress-fill" style="width:${pct}%"></div></div>
+         <div style="font-size:9px;color:var(--muted);margin-top:3px;">${prog.val}/${prog.max}</div>`}`;
+    badgeGrid.appendChild(badge);
+  });
+  grid.appendChild(badgeGrid);
+}
+// ── END ACHIEVEMENTS ─────────────────────────────────────────
 
 function renderTrends(){
   const grid=document.getElementById('trend-grid');grid.innerHTML='';
@@ -3988,6 +4120,7 @@ function renderTrends(){
   if(!anyDiet){
     dietList.innerHTML='<div style="text-align:center;padding:16px 0;font-size:13px;color:var(--muted);font-style:italic;font-family:\'DM Serif Display\',serif;">No diet logs this week yet.</div>';
   }
+  renderAchievements();
 }
 
 const COACH_MSGS=[
