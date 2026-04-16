@@ -306,6 +306,28 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
 .achievements-summary{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);}
 .achievements-summary-count{font-size:22px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--e);}
 
+.history-day-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;transition:border-color .15s;}
+.history-day-row:active{border-color:var(--e);}
+.history-day-date{font-size:12px;font-weight:500;color:var(--text);min-width:80px;}
+.history-day-dots{display:flex;gap:4px;flex:1;}
+.history-day-dot{width:8px;height:8px;border-radius:50%;background:var(--faint);}
+.history-day-score{font-size:13px;font-weight:300;font-family:'DM Serif Display',serif;min-width:28px;text-align:right;}
+.history-day-arrow{font-size:12px;color:var(--muted);}
+.hd-pillar{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
+.hd-pillar-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.hd-pillar-dot{width:8px;height:8px;border-radius:50%;}
+.hd-pillar-name{font-size:13px;font-weight:500;}
+.hd-pillar-status{font-size:11px;color:var(--muted);margin-left:auto;}
+.hd-detail-row{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);}
+.hd-detail-row:last-child{border-bottom:none;}
+.hd-detail-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;width:70px;flex-shrink:0;}
+.hd-detail-val{font-size:12px;color:var(--text);flex:1;}
+.hd-meal-item{background:var(--bg2);border-radius:6px;padding:7px 9px;margin-top:5px;}
+.hd-meal-name{font-size:12px;font-weight:500;color:var(--d-acc);}
+.hd-meal-macros{font-size:10px;color:var(--muted);margin-top:2px;}
+.hd-score-bar{height:4px;background:var(--faint);border-radius:2px;overflow:hidden;margin-top:6px;}
+.hd-score-fill{height:100%;border-radius:2px;}
+
 /* SCORE COLORS */
 .score-green .score-fill{background:var(--e);}
 .score-amber .score-fill{background:var(--d);}
@@ -607,6 +629,16 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
       </div>
       <p class="sec-lbl" style="color:var(--d);">Diet log — this week</p>
       <div id="diet-trends-list"></div>
+
+      <!-- FULL HISTORY -->
+      <div style="margin-top:18px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <p class="sec-lbl" style="margin:0;">Full history</p>
+          <span style="font-size:11px;color:var(--muted);" id="history-count"></span>
+        </div>
+        <div id="full-history-list"></div>
+      </div>
+
       <div id="achievements-section" style="margin-top:18px;">
         <p class="sec-lbl">Achievements</p>
         <div id="achievements-grid"></div>
@@ -1619,47 +1651,151 @@ function clearPillar(k){
   persistToday();renderAll();closeModal(k);
 }
 
+function renderFullHistory(){
+  const list=document.getElementById('full-history-list');
+  const countEl=document.getElementById('history-count');
+  if(!list)return;
+  list.innerHTML='';
+  const entries=[...S.history].reverse();
+  if(countEl)countEl.textContent=entries.length+' days logged';
+  if(!entries.length){
+    list.innerHTML='<p style="font-size:13px;color:var(--muted);font-style:italic;font-family:\'DM Serif Display\',serif;text-align:center;padding:16px 0;">No history yet. Start logging your MEDS pillars.</p>';
+    return;
+  }
+  const pColors={m:'var(--m-acc)',e:'var(--e)',d:'var(--d)',s:'var(--s-acc)'};
+  entries.forEach(entry=>{
+    const d=new Date(entry.date+'T12:00:00');
+    const isToday=entry.date===todayStr();
+    const label=isToday?'Today':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const row=document.createElement('div');
+    row.className='history-day-row';
+    const checkedCount=Object.values(entry.checked||{}).filter(Boolean).length;
+    const dotsHtml=['m','e','d','s'].map(k=>`<div class="history-day-dot" style="background:${entry.checked&&entry.checked[k]?pColors[k]:'var(--faint)'}"></div>`).join('');
+    const scoreColor=entry.score>=8?'var(--e)':entry.score>=5?'var(--d)':entry.score?'#e85a4a':'var(--muted)';
+    row.innerHTML=`<div class="history-day-date">${label}</div>
+      <div class="history-day-dots">${dotsHtml}</div>
+      <div style="font-size:10px;color:var(--muted);min-width:28px;text-align:center;">${checkedCount}/4</div>
+      <div class="history-day-score" style="color:${scoreColor};">${entry.score||'–'}</div>
+      <div class="history-day-arrow">›</div>`;
+    row.addEventListener('click',()=>openHistoryModal(entry.date));
+    list.appendChild(row);
+  });
+}
+
 function openHistoryModal(date){
-  const entry=S.history.find(h=>h.date===date);
+  const entry=date===todayStr()?{date,checked:{...S.checked},logs:{...S.logs},details:{...S.details},score:S.score}:S.history.find(h=>h.date===date);
   if(!entry)return;
   const d=entry.details||{};
-  const names={m:'Meditation',e:'Exercise',d:'Diet',s:'Sleep'};
-  const colors={m:'var(--m-acc)',e:'var(--e-acc)',d:'var(--d-acc)',s:'var(--s-acc)'};
-  let html='<p style="font-size:11px;color:var(--muted);margin-bottom:14px;font-style:italic;font-family:\'DM Serif Display\',serif;">'+new Date(date+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})+'</p>';
-  if(entry.score!==null&&entry.score!==undefined){
-    html+='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:12px;"><span style="font-size:26px;font-weight:300;font-family:\'DM Serif Display\',serif;color:'+(entry.score>=8?'var(--e)':entry.score>=5?'var(--d)':'#e85a4a')+'">'+entry.score+'</span><div><div style="font-size:12px;color:var(--text);">MEDS score</div><div style="font-size:11px;color:var(--muted);">'+(entry.score>=8?'Excellent day':entry.score>=5?'Good progress':'Room to improve')+'</div></div></div>';
+  const pColors={m:'var(--m-acc)',e:'var(--e)',d:'var(--d-acc)',s:'var(--s-acc)'};
+  const pNames={m:'Meditation',e:'Exercise',d:'Diet',s:'Sleep'};
+  const dateObj=new Date(date+'T12:00:00');
+  const dateLabel=date===todayStr()?'Today':dateObj.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  // Update modal title
+  document.querySelector('#modal-history .modal-title').textContent=dateLabel;
+
+  let html='';
+
+  // Score card
+  if(entry.score!=null){
+    const scoreColor=entry.score>=8?'var(--e)':entry.score>=5?'var(--d)':'#e85a4a';
+    const scoreLabel=entry.score>=8?'Excellent day':entry.score>=6?'Good progress':entry.score>=4?'Solid effort':'Keep building';
+    html+=`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;display:flex;align-items:center;gap:14px;">
+      <div style="text-align:center;flex-shrink:0;">
+        <div style="font-size:36px;font-weight:300;font-family:'DM Serif Display',serif;color:${scoreColor};line-height:1;">${entry.score}</div>
+        <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;">MEDS score</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;">${scoreLabel}</div>
+        <div style="height:4px;background:var(--faint);border-radius:2px;overflow:hidden;">
+          <div style="height:100%;width:${entry.score*10}%;background:${scoreColor};border-radius:2px;"></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          ${['m','e','d','s'].map(k=>`<div style="flex:1;height:3px;background:${entry.checked&&entry.checked[k]?pColors[k]:'var(--faint)'};border-radius:2px;"></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
   }
+
+  // Pillar detail cards
   ['m','e','d','s'].forEach(k=>{
     const done=entry.checked&&entry.checked[k];
-    html+='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;">';
-    html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(done?'8':'0')+'px;">';
-    html+='<div style="width:7px;height:7px;border-radius:50%;background:'+(done?colors[k]:'var(--faint)')+'"></div>';
-    html+='<span style="font-size:13px;font-weight:500;color:'+(done?colors[k]:'var(--muted)')+'">'+names[k]+'</span>';
-    html+='<span style="font-size:11px;color:var(--muted);margin-left:auto;">'+(done?'Done':'Not logged')+'</span></div>';
+    html+=`<div class="hd-pillar">
+      <div class="hd-pillar-head">
+        <div class="hd-pillar-dot" style="background:${done?pColors[k]:'var(--faint)'}"></div>
+        <span class="hd-pillar-name" style="color:${done?pColors[k]:'var(--muted)'}">${pNames[k]}</span>
+        <span class="hd-pillar-status">${done?'✓ Logged':'Not logged'}</span>
+      </div>`;
+
     if(done){
-      if(k==='m'&&d.medDur)html+='<div style="font-size:11px;color:var(--muted);">'+d.medDur+' min'+(d.medType?' · '+d.medType:'')+(d.medNotes?'<br><em>'+d.medNotes+'</em>':'')+'</div>';
-      if(k==='e'&&d.wtype)html+='<div style="font-size:11px;color:var(--muted);">'+d.wtype+(d.muscle?' · '+d.muscle:'')+(d.intensity?' · '+d.intensity:'')+(d.edur?' · '+d.edur+' min':'')+'</div>';
-      if(k==='d'){
-        if(d.photoLog&&d.photoLog.length){
-          const cals=Math.round(d.photoLog.reduce((a,e)=>a+(e.calories||0),0));
-          html+='<div style="font-size:11px;color:var(--muted);margin-bottom:6px;">'+d.photoLog.length+' meals · '+cals+' cal total</div>';
-          d.photoLog.forEach(meal=>{
-            html+='<div style="background:var(--bg2);border-radius:8px;padding:8px 10px;margin-top:5px;">';
-            html+='<div style="font-size:12px;font-weight:500;color:var(--d-acc);">'+(meal.mealtime||'Meal')+' — '+(meal.name||'Food')+'</div>';
-            html+='<div style="font-size:11px;color:var(--muted);margin-top:2px;">'+Math.round(meal.calories||0)+' cal · '+Math.round(meal.protein_g||0)+'g protein · '+Math.round(meal.carbs_g||0)+'g carbs · '+Math.round(meal.fat_g||0)+'g fat</div>';
-            if(meal.ingredients&&meal.ingredients.length){html+='<div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic;">'+meal.ingredients.slice(0,4).join(', ')+(meal.ingredients.length>4?'…':'')+'</div>';}
-            html+='</div>';
-          });
-        } else if(d.dgoal){
-          html+='<div style="font-size:11px;color:var(--muted);">'+(d.dmeals||'?')+' meals · '+(d.dgoal||'')+(d.dpref&&d.dpref!=='No restriction'?' · '+d.dpref:'')+'</div>';
-        } else if(d.dmeals){
-          html+='<div style="font-size:11px;color:var(--muted);">'+d.dmeals+' meals logged</div>';
-        }
+      if(k==='m'){
+        html+='<div style="display:flex;flex-direction:column;gap:0;">';
+        if(d.medDur)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Duration</span><span class="hd-detail-val">${d.medDur} min</span></div>`;
+        if(d.medType)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Type</span><span class="hd-detail-val">${d.medType}</span></div>`;
+        if(d.mmood_before)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Mood before</span><span class="hd-detail-val">${d.mmood_before}</span></div>`;
+        if(d.medNotes)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Notes</span><span class="hd-detail-val" style="font-style:italic;">${d.medNotes}</span></div>`;
+        html+='</div>';
       }
-      if(k==='s'&&d.shrs)html+='<div style="font-size:11px;color:var(--muted);">'+d.shrs+' hrs'+(d.squal?' · '+d.squal:'')+(d.sbed?' · Bed '+d.sbed:'')+(d.sleepNotes?'<br><em>'+d.sleepNotes+'</em>':'')+'</div>';
+
+      if(k==='e'){
+        html+='<div style="display:flex;flex-direction:column;gap:0;">';
+        if(d.wtype)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Type</span><span class="hd-detail-val">${d.wtype}${d.muscle?' — '+d.muscle:''}</span></div>`;
+        if(d.edur)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Duration</span><span class="hd-detail-val">${d.edur} min</span></div>`;
+        if(d.intensity)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Intensity</span><span class="hd-detail-val">${d.intensity}</span></div>`;
+        html+='</div>';
+      }
+
+      if(k==='d'){
+        html+='<div style="display:flex;flex-direction:column;gap:0;">';
+        // Checked meals from plan
+        const FULL_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const dayName=FULL_DAYS[dateObj.getDay()];
+        const planEntry=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(dy=>dy.day===dayName):null;
+        const dayChecks=d.mealsChecked&&d.mealsChecked[dayName]||[];
+        if(planEntry&&planEntry.meals&&planEntry.meals.length){
+          const eaten=planEntry.meals.filter((_,i)=>dayChecks[i]);
+          const total=planEntry.meals.length;
+          html+=`<div class="hd-detail-row"><span class="hd-detail-label">Meal plan</span><span class="hd-detail-val">${eaten.length}/${total} meals eaten</span></div>`;
+          if(eaten.length){
+            eaten.forEach(meal=>{
+              const colonIdx=meal.indexOf(':');
+              const label=colonIdx>0?meal.slice(0,colonIdx).trim():'';
+              const name=colonIdx>0?meal.slice(colonIdx+1).trim():meal;
+              html+=`<div class="hd-meal-item"><div class="hd-meal-name">${name}</div>${label?`<div style="font-size:10px;color:var(--muted);">${label}</div>`:''}</div>`;
+            });
+          }
+        }
+        // Photo log
+        if(d.photoLog&&d.photoLog.length){
+          const totalCals=Math.round(d.photoLog.reduce((a,e)=>a+(e.calories||0),0));
+          html+=`<div class="hd-detail-row" style="margin-top:${planEntry?'8':'0'}px;"><span class="hd-detail-label">Photo log</span><span class="hd-detail-val">${d.photoLog.length} items · ${totalCals} cal</span></div>`;
+          d.photoLog.forEach(meal=>{
+            html+=`<div class="hd-meal-item">
+              <div class="hd-meal-name">${meal.mealtime?meal.mealtime+' — ':''}${meal.name||'Food'}</div>
+              <div class="hd-meal-macros">${Math.round(meal.calories||0)} cal · ${Math.round(meal.protein_g||0)}g protein · ${Math.round(meal.carbs_g||0)}g carbs · ${Math.round(meal.fat_g||0)}g fat</div>
+              ${meal.ingredients&&meal.ingredients.length?`<div style="font-size:10px;color:var(--muted);margin-top:2px;font-style:italic;">${meal.ingredients.slice(0,4).join(', ')}${meal.ingredients.length>4?'…':''}</div>`:''}
+            </div>`;
+          });
+        }
+        if(!planEntry&&!d.photoLog)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Meals</span><span class="hd-detail-val">${d.dmeals||'?'} logged</span></div>`;
+        html+='</div>';
+      }
+
+      if(k==='s'){
+        html+='<div style="display:flex;flex-direction:column;gap:0;">';
+        if(d.shrs)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Hours</span><span class="hd-detail-val">${d.shrs} hrs</span></div>`;
+        if(d.squal)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Quality</span><span class="hd-detail-val">${d.squal}</span></div>`;
+        if(d.sbed)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Bedtime</span><span class="hd-detail-val">${d.sbed}</span></div>`;
+        if(d.swake)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Wake time</span><span class="hd-detail-val">${d.swake}</span></div>`;
+        if(d.sfactors)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Factors</span><span class="hd-detail-val">${d.sfactors}</span></div>`;
+        if(d.sleepScore!=null)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Sleep score</span><span class="hd-detail-val" style="color:var(--s-acc);">${d.sleepScore}/100</span></div>`;
+        if(d.sleepNotes)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Notes</span><span class="hd-detail-val" style="font-style:italic;">${d.sleepNotes}</span></div>`;
+        html+='</div>';
+      }
     }
     html+='</div>';
   });
+
   document.getElementById('history-modal-body').innerHTML=html;
   document.getElementById('modal-history').classList.add('open');
 }
@@ -4121,6 +4257,7 @@ function renderTrends(){
     dietList.innerHTML='<div style="text-align:center;padding:16px 0;font-size:13px;color:var(--muted);font-style:italic;font-family:\'DM Serif Display\',serif;">No diet logs this week yet.</div>';
   }
   renderAchievements();
+  renderFullHistory();
 }
 
 const COACH_MSGS=[
