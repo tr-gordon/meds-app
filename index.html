@@ -791,29 +791,100 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
     <div class="modal-drag"></div>
     <div class="modal-head"><p class="modal-title" style="color:var(--m-acc);">Meditation</p></div>
     <div class="modal-body">
-      <p class="field-lbl">Duration</p>
-      <div class="chip-row">
-        <div class="chip" onclick="selChip(this,'dur','5','m')">5 min</div>
-        <div class="chip" onclick="selChip(this,'dur','10','m')">10 min</div>
-        <div class="chip" onclick="selChip(this,'dur','15','m')">15 min</div>
-        <div class="chip" onclick="selChip(this,'dur','20','m')">20 min</div>
-        <div class="chip" onclick="selChip(this,'dur','30','m')">30 min</div>
-        <div class="chip" onclick="selChip(this,'dur','45','m')">45 min</div>
+
+      <!-- TABS -->
+      <div class="diet-tabs" style="margin-bottom:14px;">
+        <button class="dtab active" id="mtab-session" onclick="switchMedTab('session',this)" style="border-color:var(--m);background:var(--m-bg);color:var(--m-acc);">Session</button>
+        <button class="dtab" id="mtab-timer" onclick="switchMedTab('timer',this)">Timer</button>
+        <button class="dtab" id="mtab-history" onclick="switchMedTab('history',this)">History</button>
       </div>
-      <p class="field-lbl">Type</p>
-      <div class="chip-row">
-        <div class="chip" onclick="selChip(this,'mtype','Breathwork','m')">Breathwork</div>
-        <div class="chip" onclick="selChip(this,'mtype','Mindfulness','m')">Mindfulness</div>
-        <div class="chip" onclick="selChip(this,'mtype','Body scan','m')">Body scan</div>
-        <div class="chip" onclick="selChip(this,'mtype','Visualization','m')">Visualization</div>
-        <div class="chip" onclick="selChip(this,'mtype','Mantra','m')">Mantra</div>
-        <div class="chip" onclick="selChip(this,'mtype','Guided','m')">Guided</div>
+
+      <!-- SESSION TAB -->
+      <div id="med-tab-session">
+        <p class="field-lbl">Session type</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;" id="med-type-grid"></div>
+        <p class="field-lbl">Duration</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'dur','5','m')">5 min</div>
+          <div class="chip" onclick="selChip(this,'dur','10','m')">10 min</div>
+          <div class="chip" onclick="selChip(this,'dur','15','m')">15 min</div>
+          <div class="chip" onclick="selChip(this,'dur','20','m')">20 min</div>
+          <div class="chip" onclick="selChip(this,'dur','30','m')">30 min</div>
+          <div class="chip" onclick="selChip(this,'dur','45','m')">45 min</div>
+        </div>
+        <p class="field-lbl">Mood before <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none;">optional</span></p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'mmood_before','Anxious','m')">Anxious</div>
+          <div class="chip" onclick="selChip(this,'mmood_before','Stressed','m')">Stressed</div>
+          <div class="chip" onclick="selChip(this,'mmood_before','Neutral','m')">Neutral</div>
+          <div class="chip" onclick="selChip(this,'mmood_before','Calm','m')">Calm</div>
+          <div class="chip" onclick="selChip(this,'mmood_before','Tired','m')">Tired</div>
+        </div>
+        <p class="field-lbl">Notes</p>
+        <textarea id="med-notes" placeholder="How did it feel? Any observations or insights..."></textarea>
+        <div id="med-session-insight" style="display:none;margin-top:10px;" class="ai-card">
+          <p class="ai-tag">Session tip</p>
+          <p class="ai-text" id="med-session-tip"></p>
+        </div>
       </div>
-      <p class="field-lbl">Notes</p>
-      <textarea id="med-notes" placeholder="How did it feel? Any observations or insights..."></textarea>
+
+      <!-- TIMER TAB -->
+      <div id="med-tab-timer" style="display:none;">
+        <!-- Breathing animation -->
+        <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 16px;">
+          <div id="med-breath-ring" style="width:120px;height:120px;border-radius:50%;border:2px solid var(--m);display:flex;align-items:center;justify-content:center;position:relative;transition:transform 4s ease-in-out;margin-bottom:14px;">
+            <div style="width:80px;height:80px;border-radius:50%;background:var(--m-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div id="med-timer-display" style="font-size:22px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--m-acc);">0:00</div>
+              <div id="med-breath-label" style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.06em;">Ready</div>
+            </div>
+          </div>
+          <div id="med-breath-instruction" style="font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;text-align:center;min-height:20px;margin-bottom:14px;"></div>
+
+          <!-- Breathing pattern selector -->
+          <p class="field-lbl" style="width:100%;">Breathing pattern</p>
+          <div class="chip-row" style="margin-bottom:14px;">
+            <div class="chip active" style="border-color:var(--m);background:var(--m-bg);color:var(--m-acc);" onclick="selectBreathPattern('box',this)">Box 4-4-4-4</div>
+            <div class="chip" onclick="selectBreathPattern('478',this)">4-7-8</div>
+            <div class="chip" onclick="selectBreathPattern('calm',this)">5-5 calm</div>
+            <div class="chip" onclick="selectBreathPattern('energise',this)">Energise</div>
+          </div>
+
+          <div id="med-pattern-desc" style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:16px;line-height:1.5;padding:0 8px;"></div>
+
+          <!-- Duration for timer -->
+          <p class="field-lbl" style="width:100%;">Duration</p>
+          <div class="chip-row" style="margin-bottom:16px;">
+            <div class="chip" onclick="setTimerDur(5,this)">5 min</div>
+            <div class="chip active" style="border-color:var(--m);background:var(--m-bg);color:var(--m-acc);" onclick="setTimerDur(10,this)">10 min</div>
+            <div class="chip" onclick="setTimerDur(15,this)">15 min</div>
+            <div class="chip" onclick="setTimerDur(20,this)">20 min</div>
+          </div>
+
+          <!-- Controls -->
+          <div style="display:flex;gap:12px;align-items:center;">
+            <button id="med-timer-btn" onclick="toggleMedTimer()" style="width:64px;height:64px;border-radius:50%;border:2px solid var(--m);background:var(--m-bg);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              <svg id="med-play-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"><polygon points="6,3 17,10 6,17" fill="var(--m-acc)"/></svg>
+              <svg id="med-pause-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" style="display:none;"><rect x="4" y="3" width="4" height="14" rx="1" fill="var(--m-acc)"/><rect x="12" y="3" width="4" height="14" rx="1" fill="var(--m-acc)"/></svg>
+            </button>
+            <button onclick="resetMedTimer()" style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7a5 5 0 1 1 1 3" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round"/><path d="M2 10V7h3" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div id="med-timer-complete" style="display:none;text-align:center;margin-top:12px;">
+            <p style="font-size:13px;color:var(--m-acc);font-style:italic;font-family:'DM Serif Display',serif;">Session complete ✨</p>
+            <button onclick="saveMedFromTimer()" style="margin-top:8px;padding:10px 20px;border-radius:var(--radius-sm);border:1px solid var(--m);background:var(--m-bg);color:var(--m-acc);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500;">Log this session →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY TAB -->
+      <div id="med-tab-history" style="display:none;">
+        <div id="med-history-list"></div>
+      </div>
+
     </div>
-    <div class="modal-foot">
-      <button class="btn-primary" style="border-color:var(--m);background:var(--m-bg);color:var(--m-acc);" onclick="saveM()">Save meditation</button>
+    <div class="modal-foot" id="med-modal-foot">
+      <button class="btn-primary" id="save-m-btn" style="border-color:var(--m);background:var(--m-bg);color:var(--m-acc);" onclick="saveM()">Save meditation</button>
       <button class="btn-ghost" onclick="closeModal('m')">Cancel</button>
     </div>
   </div>
@@ -1396,8 +1467,22 @@ function openModal(k){
   if(k==='m'){
     preSelectChip('dur',d.medDur,'m');
     preSelectChip('mtype',d.medType,'m');
+    preSelectChip('mmood_before',d.mmood_before,'m');
     document.getElementById('med-notes').value=d.medNotes||'';
-    const saveBtn=document.querySelector('#modal-m .btn-primary');
+    initMedTypeGrid();
+    // Restore type card selection
+    if(d.medType){
+      const grid=document.getElementById('med-type-grid');
+      Array.from(grid.children).forEach((c,i)=>{
+        if(MED_TYPES[i]&&MED_TYPES[i].key===d.medType){
+          c.style.borderColor='var(--m)';c.style.background='var(--m-bg)';
+          document.getElementById('med-session-tip').textContent=MED_TYPES[i].tip;
+          document.getElementById('med-session-insight').style.display='block';
+        }
+      });
+    }
+    switchMedTab('session',document.getElementById('mtab-session'));
+    const saveBtn=document.getElementById('save-m-btn');
     if(saveBtn)saveBtn.textContent=S.checked.m?'Update meditation':'Save meditation';
     const foot=document.querySelector('#modal-m .modal-foot');
     let clrBtn=document.getElementById('clear-m');
@@ -1658,13 +1743,249 @@ function computeScore(){
   return Math.min(10,Math.max(1,Math.round((sc/maxPossible)*10)));
 }
 
+// ── MEDITATION ─────────────────────────────────────────────
+const MED_TYPES=[
+  {key:'Mindfulness',icon:'◎',desc:'Observe thoughts without judgment. Anchor to the present moment.',tip:'Focus on the sensation of breathing. When your mind wanders, gently return without judgment.'},
+  {key:'Breathwork',icon:'◌',desc:'Control your breath to shift your nervous system state.',tip:'Breathwork directly activates the vagus nerve. Slower exhales than inhales trigger calm.'},
+  {key:'Body scan',icon:'◻',desc:'Systematically release tension from head to toe.',tip:'Start at the crown of your head. Spend 20-30 seconds on each body part, breathing into tension.'},
+  {key:'Visualization',icon:'◈',desc:'Use mental imagery to rehearse calm or peak performance.',tip:'Make the image vivid — include sounds, textures, and feelings. Visualisation activates the same neural pathways as real experience.'},
+  {key:'Mantra',icon:'◉',desc:'Repeat a word or phrase to anchor scattered attention.',tip:'Choose a word that resonates — peace, release, here. Silently repeat on each exhale.'},
+  {key:'Loving-kindness',icon:'◍',desc:'Cultivate compassion for yourself and others.',tip:'Begin with yourself, then extend warmth outward — to loved ones, strangers, and difficult people.'},
+];
+
+const BREATH_PATTERNS={
+  box:{label:'Box breathing',phases:[{name:'Inhale',dur:4},{name:'Hold',dur:4},{name:'Exhale',dur:4},{name:'Hold',dur:4}],desc:'Equal counts of 4. Used by Navy SEALs for stress control. Great for focus and calm.'},
+  '478':{label:'4-7-8',phases:[{name:'Inhale',dur:4},{name:'Hold',dur:7},{name:'Exhale',dur:8}],desc:'Inhale 4, hold 7, exhale 8. Activates the parasympathetic nervous system. Powerful for anxiety and sleep.'},
+  calm:{label:'5-5 calm',phases:[{name:'Inhale',dur:5},{name:'Exhale',dur:5}],desc:'Simple coherent breathing at 6 breaths/minute. Optimises heart rate variability and reduces cortisol.'},
+  energise:{label:'Energising',phases:[{name:'Inhale',dur:2},{name:'Exhale',dur:1}],desc:'Short, sharp breaths. Increases alertness and oxygen flow. Use before exercise or when feeling sluggish.'}
+};
+
+let _medTimer=null,_medElapsed=0,_medDuration=600,_medRunning=false;
+let _breathPattern='box',_breathPhaseIdx=0,_breathPhaseElapsed=0,_breathInterval=null;
+let _timerDur=10;
+
+function initMedTypeGrid(){
+  const grid=document.getElementById('med-type-grid');
+  if(!grid||grid.children.length>0)return;
+  MED_TYPES.forEach(t=>{
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer;transition:border-color .15s;';
+    card.innerHTML=`<div style="font-size:16px;margin-bottom:4px;color:var(--m-acc);">${t.icon}</div>
+      <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px;">${t.key}</div>
+      <div style="font-size:10px;color:var(--muted);line-height:1.4;">${t.desc}</div>`;
+    card.addEventListener('click',()=>{
+      document.querySelectorAll('#med-type-grid div[style*="background"]').forEach(c=>{
+        c.style.borderColor='var(--border)';c.style.background='var(--bg2)';
+      });
+      card.style.borderColor='var(--m)';card.style.background='var(--m-bg)';
+      chips['mtype']=t.key;
+      // Show tip
+      document.getElementById('med-session-tip').textContent=t.tip;
+      document.getElementById('med-session-insight').style.display='block';
+    });
+    grid.appendChild(card);
+  });
+  // Restore selection
+  if(chips['mtype']){
+    Array.from(grid.children).forEach((c,i)=>{
+      if(MED_TYPES[i]&&MED_TYPES[i].key===chips['mtype']){
+        c.style.borderColor='var(--m)';c.style.background='var(--m-bg)';
+      }
+    });
+  }
+}
+
+function switchMedTab(tab,btn){
+  ['session','timer','history'].forEach(t=>{
+    document.getElementById('med-tab-'+t).style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('#modal-m .dtab').forEach(b=>{b.className='dtab';b.style.cssText='';});
+  if(btn){btn.className='dtab active';btn.style.cssText='border-color:var(--m);background:var(--m-bg);color:var(--m-acc)';}
+  // Show/hide save button
+  const foot=document.getElementById('med-modal-foot');
+  const saveBtn=document.getElementById('save-m-btn');
+  if(saveBtn)saveBtn.style.display=tab==='timer'?'none':'block';
+  if(tab==='timer')initBreathPattern();
+  if(tab==='history')renderMedHistory();
+}
+
+function selectBreathPattern(key,el){
+  _breathPattern=key;
+  document.querySelectorAll('#med-tab-timer .chip').forEach(c=>{
+    if(['Box 4-4-4-4','4-7-8','5-5 calm','Energise'].some(l=>c.textContent.trim()===l)){
+      c.className='chip';c.style.cssText='';
+    }
+  });
+  el.className='chip active';el.style.cssText='border-color:var(--m);background:var(--m-bg);color:var(--m-acc)';
+  document.getElementById('med-pattern-desc').textContent=BREATH_PATTERNS[key].desc;
+  if(!_medRunning)initBreathPattern();
+}
+
+function setTimerDur(mins,el){
+  _timerDur=mins;_medDuration=mins*60;
+  if(!_medRunning){_medElapsed=0;updateTimerDisplay();}
+  document.querySelectorAll('#med-tab-timer .chip').forEach(c=>{
+    if(['5 min','10 min','15 min','20 min'].includes(c.textContent.trim())){
+      c.className='chip';c.style.cssText='';
+    }
+  });
+  el.className='chip active';el.style.cssText='border-color:var(--m);background:var(--m-bg);color:var(--m-acc)';
+}
+
+function initBreathPattern(){
+  _breathPhaseIdx=0;_breathPhaseElapsed=0;
+  const pat=BREATH_PATTERNS[_breathPattern];
+  if(pat&&pat.phases.length){
+    document.getElementById('med-breath-label').textContent=pat.phases[0].name;
+    document.getElementById('med-breath-instruction').textContent=pat.desc;
+    document.getElementById('med-pattern-desc').textContent=pat.desc;
+  }
+  updateTimerDisplay();
+}
+
+function updateTimerDisplay(){
+  const rem=Math.max(0,_medDuration-_medElapsed);
+  const m=Math.floor(rem/60),s=rem%60;
+  document.getElementById('med-timer-display').textContent=m+':'+(s<10?'0':'')+s;
+}
+
+function toggleMedTimer(){
+  if(_medRunning){
+    _medRunning=false;
+    clearInterval(_medTimer);clearInterval(_breathInterval);
+    document.getElementById('med-play-icon').style.display='block';
+    document.getElementById('med-pause-icon').style.display='none';
+  } else {
+    if(_medElapsed>=_medDuration){resetMedTimer();return;}
+    _medRunning=true;
+    document.getElementById('med-play-icon').style.display='none';
+    document.getElementById('med-pause-icon').style.display='block';
+    document.getElementById('med-timer-complete').style.display='none';
+    // Main countdown
+    _medTimer=setInterval(()=>{
+      _medElapsed++;
+      updateTimerDisplay();
+      if(_medElapsed>=_medDuration){
+        clearInterval(_medTimer);clearInterval(_breathInterval);
+        _medRunning=false;
+        document.getElementById('med-play-icon').style.display='block';
+        document.getElementById('med-pause-icon').style.display='none';
+        document.getElementById('med-timer-complete').style.display='block';
+        document.getElementById('med-breath-label').textContent='Done';
+        document.getElementById('med-breath-instruction').textContent='Session complete. Take a moment before returning.';
+        const ring=document.getElementById('med-breath-ring');
+        if(ring){ring.style.transform='scale(1)';ring.style.borderColor='var(--m-acc)';}
+      }
+    },1000);
+    // Breathing guide
+    startBreathCycle();
+  }
+}
+
+function startBreathCycle(){
+  const pat=BREATH_PATTERNS[_breathPattern];
+  if(!pat)return;
+  clearInterval(_breathInterval);
+  _breathInterval=setInterval(()=>{
+    if(!_medRunning)return;
+    _breathPhaseElapsed++;
+    const phase=pat.phases[_breathPhaseIdx];
+    const progress=_breathPhaseElapsed/phase.dur;
+    const ring=document.getElementById('med-breath-ring');
+    // Animate ring
+    if(ring){
+      if(phase.name==='Inhale')ring.style.transform=`scale(${1+progress*0.25})`;
+      else if(phase.name==='Exhale')ring.style.transform=`scale(${1.25-progress*0.25})`;
+      else ring.style.transform=ring.style.transform; // hold
+    }
+    if(_breathPhaseElapsed>=phase.dur){
+      _breathPhaseElapsed=0;
+      _breathPhaseIdx=(_breathPhaseIdx+1)%pat.phases.length;
+      const nextPhase=pat.phases[_breathPhaseIdx];
+      document.getElementById('med-breath-label').textContent=nextPhase.name;
+      document.getElementById('med-breath-instruction').textContent=
+        nextPhase.name==='Inhale'?'Breathe in slowly...':
+        nextPhase.name==='Exhale'?'Let it go...':
+        nextPhase.name==='Hold'?'Hold gently...':'';
+    }
+  },1000);
+}
+
+function resetMedTimer(){
+  clearInterval(_medTimer);clearInterval(_breathInterval);
+  _medRunning=false;_medElapsed=0;_breathPhaseIdx=0;_breathPhaseElapsed=0;
+  document.getElementById('med-play-icon').style.display='block';
+  document.getElementById('med-pause-icon').style.display='none';
+  document.getElementById('med-timer-complete').style.display='none';
+  document.getElementById('med-breath-label').textContent='Ready';
+  document.getElementById('med-breath-instruction').textContent='';
+  const ring=document.getElementById('med-breath-ring');
+  if(ring){ring.style.transform='scale(1)';ring.style.borderColor='var(--m)';}
+  updateTimerDisplay();
+}
+
+function saveMedFromTimer(){
+  // Auto-fill session tab from timer
+  chips['dur']=String(_timerDur);
+  // Switch to session tab to confirm
+  switchMedTab('session',document.getElementById('mtab-session'));
+  // Pre-select duration chip
+  document.querySelectorAll('#med-tab-session .chip').forEach(c=>{
+    if(c.textContent.trim()===_timerDur+' min'){
+      c.classList.add('active');c.style.borderColor='var(--m)';c.style.background='var(--m-bg)';c.style.color='var(--m-acc)';
+    }
+  });
+}
+
+function renderMedHistory(){
+  const list=document.getElementById('med-history-list');
+  list.innerHTML='';
+  const sessions=S.history.filter(h=>h.checked&&h.checked.m&&h.details&&h.details.medDur).slice(-14).reverse();
+  if(!sessions.length){
+    list.innerHTML='<p style="font-size:13px;color:var(--muted);font-style:italic;font-family:\'DM Serif Display\',serif;text-align:center;padding:20px 0;">No sessions logged yet. Start meditating to see your history here.</p>';
+    return;
+  }
+  const totalMins=sessions.reduce((a,h)=>a+parseInt(h.details.medDur||0),0);
+  const avgMins=Math.round(totalMins/sessions.length);
+  // Summary
+  const summary=document.createElement('div');
+  summary.style.cssText='display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;';
+  [{val:sessions.length,lbl:'Sessions'},{val:totalMins+'m',lbl:'Total'},{val:avgMins+'m',lbl:'Avg'}].forEach(s=>{
+    summary.innerHTML+=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+      <div style="font-size:20px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--m-acc);">${s.val}</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px;">${s.lbl}</div>
+    </div>`;
+  });
+  list.appendChild(summary);
+  // Session list
+  sessions.forEach(h=>{
+    const d=new Date(h.date+'T12:00:00');
+    const label=h.date===todayStr()?'Today':d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);';
+    row.innerHTML=`<div style="width:36px;height:36px;border-radius:50%;background:var(--m-bg);border:1px solid var(--m);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-size:12px;color:var(--m-acc);font-weight:500;">${h.details.medDur}m</span>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:12px;font-weight:500;color:var(--text);">${h.details.medType||'Meditation'}</div>
+        <div style="font-size:10px;color:var(--muted);">${label}${h.details.mmood_before?' · '+h.details.mmood_before:''}</div>
+      </div>
+      ${h.details.medNotes?`<div style="font-size:10px;color:var(--muted);font-style:italic;max-width:80px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">${h.details.medNotes}</div>`:''}`;
+    list.appendChild(row);
+  });
+}
+
 function saveM(){
-  const dur=chips['dur'];const mtype=chips['mtype']||'';const notes=document.getElementById('med-notes').value;
+  const dur=chips['dur'];const mtype=chips['mtype']||'Mindfulness';
+  const notes=document.getElementById('med-notes').value;
+  const mood=chips['mmood_before']||'';
   if(!dur){alert('Please select a duration.');return;}
-  S.checked.m=true;S.logs.m=parseInt(dur)||0;S.details.medDur=dur;S.details.medType=mtype;S.details.medNotes=notes;
+  S.checked.m=true;S.logs.m=parseInt(dur)||0;
+  S.details.medDur=dur;S.details.medType=mtype;S.details.medNotes=notes;S.details.mmood_before=mood;
   if(Object.values(S.checked).every(Boolean))S.score=computeScore();
   persistToday();renderAll();closeModal('m');
 }
+// ── END MEDITATION ──────────────────────────────────────────
 
 const WORKOUTS={
   'Strength':{'Full body':['Barbell squat — 4×8','Bench press — 4×8','Deadlift — 3×6','Pull-ups — 3×8','Dumbbell rows — 3×10','Plank — 3×45s'],
