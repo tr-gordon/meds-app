@@ -4219,7 +4219,8 @@ function renderTrends(){
       ?{date,checked:{...S.checked},logs:{...S.logs},details:{...S.details},score:S.score}
       :S.history.find(h=>h.date===date);
     const hasAny=entry&&Object.values(entry.checked||{}).some(Boolean);
-    const d=new Date(date);
+    // Parse date in local time by appending T12:00:00 to avoid UTC offset shifting the day
+    const d=new Date(date+'T12:00:00');
     const col=document.createElement('div');col.className='day-col';
     col.style.cursor=entry?'pointer':'default';
     col.style.opacity=hasAny?'1':'0.4';
