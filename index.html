@@ -4200,16 +4200,26 @@ function renderTrends(){
   const grid=document.getElementById('trend-grid');grid.innerHTML='';
   const days=[];for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*86400000);days.push(d.toISOString().split('T')[0]);}
   days.forEach(date=>{
-    const entry=S.history.find(h=>h.date===date);const d=new Date(date);
+    // For today use live state, for past days use history
     const isToday=date===todayStr();
+    const entry=isToday
+      ?{date,checked:{...S.checked},logs:{...S.logs},details:{...S.details},score:S.score}
+      :S.history.find(h=>h.date===date);
+    const hasAny=entry&&Object.values(entry.checked||{}).some(Boolean);
+    const d=new Date(date);
     const col=document.createElement('div');col.className='day-col';
-    col.style.cursor='pointer';col.style.opacity=entry?'1':'0.5';
+    col.style.cursor=entry?'pointer':'default';
+    col.style.opacity=hasAny?'1':'0.4';
     col.innerHTML='<div class="day-name" style="color:'+(isToday?'var(--e)':'var(--muted)')+'">'+( isToday?'Today':DAYS[d.getDay()])+'</div><div class="day-dots"><div class="day-dot '+(entry&&entry.checked.m?'md':'')+'"></div><div class="day-dot '+(entry&&entry.checked.e?'ed':'')+'"></div><div class="day-dot '+(entry&&entry.checked.d?'dd':'')+'"></div><div class="day-dot '+(entry&&entry.checked.s?'sd':'')+'"></div></div>';
-    if(entry)col.onclick=()=>openHistoryModal(date);
+    if(hasAny)col.onclick=()=>openHistoryModal(date);
     grid.appendChild(col);
   });
   document.getElementById('t-streak').textContent=S.streak;
-  const week=days.map(d=>S.history.find(h=>h.date===d)).filter(Boolean);
+  // Include today's live state in weekly stats
+  const week=days.map(date=>{
+    if(date===todayStr())return{date,checked:{...S.checked},logs:{...S.logs},score:S.score};
+    return S.history.find(h=>h.date===date)||null;
+  }).filter(e=>e&&Object.values(e.checked||{}).some(Boolean));
   const total=week.reduce((a,e)=>a+Object.values(e.checked).filter(Boolean).length,0);
   const p=week.length?Math.round((total/(week.length*4))*100):0;
   document.getElementById('t-pct').textContent=p+'%';
