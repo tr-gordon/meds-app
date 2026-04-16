@@ -1080,37 +1080,107 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
     <div class="modal-drag"></div>
     <div class="modal-head"><p class="modal-title" style="color:var(--s-acc);">Sleep</p></div>
     <div class="modal-body">
-      <p class="field-lbl">Hours slept</p>
-      <div class="chip-row">
-        <div class="chip" onclick="selChip(this,'shrs','5','s')">5 hrs</div>
-        <div class="chip" onclick="selChip(this,'shrs','6','s')">6 hrs</div>
-        <div class="chip" onclick="selChip(this,'shrs','7','s')">7 hrs</div>
-        <div class="chip" onclick="selChip(this,'shrs','8','s')">8 hrs</div>
-        <div class="chip" onclick="selChip(this,'shrs','9','s')">9+ hrs</div>
+
+      <!-- TABS -->
+      <div class="diet-tabs" style="margin-bottom:14px;">
+        <button class="dtab active" id="stab-log" onclick="switchSleepTab('log',this)" style="border-color:var(--s);background:var(--s-bg);color:var(--s-acc);">Last night</button>
+        <button class="dtab" id="stab-tonight" onclick="switchSleepTab('tonight',this)">Tonight's plan</button>
+        <button class="dtab" id="stab-trend" onclick="switchSleepTab('trend',this)">Trends</button>
       </div>
-      <p class="field-lbl">Sleep quality</p>
-      <div class="chip-row">
-        <div class="chip" onclick="selChip(this,'squal','Poor','s')">Poor</div>
-        <div class="chip" onclick="selChip(this,'squal','Fair','s')">Fair</div>
-        <div class="chip" onclick="selChip(this,'squal','Good','s')">Good</div>
-        <div class="chip" onclick="selChip(this,'squal','Great','s')">Great</div>
+
+      <!-- LOG TAB -->
+      <div id="sleep-tab-log">
+        <p class="field-lbl">Hours slept</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'shrs','5','s')">5 hrs</div>
+          <div class="chip" onclick="selChip(this,'shrs','6','s')">6 hrs</div>
+          <div class="chip" onclick="selChip(this,'shrs','7','s')">7 hrs</div>
+          <div class="chip" onclick="selChip(this,'shrs','8','s')">8 hrs</div>
+          <div class="chip" onclick="selChip(this,'shrs','9','s')">9+ hrs</div>
+        </div>
+        <p class="field-lbl">Sleep quality</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'squal','Poor','s');updateSleepScore()">Poor</div>
+          <div class="chip" onclick="selChip(this,'squal','Fair','s');updateSleepScore()">Fair</div>
+          <div class="chip" onclick="selChip(this,'squal','Good','s');updateSleepScore()">Good</div>
+          <div class="chip" onclick="selChip(this,'squal','Great','s');updateSleepScore()">Great</div>
+        </div>
+        <p class="field-lbl">Bedtime last night</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'sbed','Before 9pm','s')">Before 9pm</div>
+          <div class="chip" onclick="selChip(this,'sbed','9–10pm','s')">9–10pm</div>
+          <div class="chip" onclick="selChip(this,'sbed','10–11pm','s')">10–11pm</div>
+          <div class="chip" onclick="selChip(this,'sbed','After 11pm','s')">After 11pm</div>
+        </div>
+        <p class="field-lbl">Wake time</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'swake','Before 6am','s')">Before 6am</div>
+          <div class="chip" onclick="selChip(this,'swake','6–7am','s')">6–7am</div>
+          <div class="chip" onclick="selChip(this,'swake','7–8am','s')">7–8am</div>
+          <div class="chip" onclick="selChip(this,'swake','After 8am','s')">After 8am</div>
+        </div>
+        <p class="field-lbl">Factors last night <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none;">(select all that apply)</span></p>
+        <div class="chip-row" style="flex-wrap:wrap;">
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Caffeine after 2pm','s')">Caffeine after 2pm</div>
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Alcohol','s')">Alcohol</div>
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Late meal','s')">Late meal</div>
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Screen time','s')">Screen time</div>
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Stress','s')">Stress</div>
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Exercise today','s')">Exercise today</div>
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Meditation','s')">Meditation</div>
+          <div class="chip" onclick="toggleMultiChip(this,'sfactors','Consistent bedtime','s')">Consistent bedtime</div>
+        </div>
+        <!-- Sleep score -->
+        <div id="sleep-score-card" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin:12px 0;display:flex;align-items:center;gap:14px;">
+          <div style="text-align:center;flex-shrink:0;">
+            <div id="sleep-score-val" style="font-size:32px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--s-acc);">–</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Sleep score</div>
+          </div>
+          <div id="sleep-score-msg" style="font-size:12px;color:var(--muted);line-height:1.6;font-style:italic;font-family:'DM Serif Display',serif;"></div>
+        </div>
+        <p class="field-lbl">Notes</p>
+        <textarea id="sleep-notes" placeholder="Woke up during the night? Dreams? How you feel this morning..."></textarea>
+        <div class="ai-card" id="sleep-ai" style="display:none;margin-top:12px;">
+          <p class="ai-tag">Sleep insight</p>
+          <p class="ai-text" id="sleep-ai-text"></p>
+        </div>
       </div>
-      <p class="field-lbl">Bedtime last night</p>
-      <div class="chip-row">
-        <div class="chip" onclick="selChip(this,'sbed','Before 9pm','s')">Before 9pm</div>
-        <div class="chip" onclick="selChip(this,'sbed','9–10pm','s')">9–10pm</div>
-        <div class="chip" onclick="selChip(this,'sbed','10–11pm','s')">10–11pm</div>
-        <div class="chip" onclick="selChip(this,'sbed','After 11pm','s')">After 11pm</div>
+
+      <!-- TONIGHT TAB -->
+      <div id="sleep-tab-tonight" style="display:none;">
+        <div class="ai-card" style="margin-bottom:12px;">
+          <p class="ai-tag">Tonight's target bedtime</p>
+          <p id="sleep-bedtime-rec" style="font-size:22px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--s-acc);margin:4px 0;">–</p>
+          <p id="sleep-bedtime-why" style="font-size:11px;color:var(--muted);line-height:1.5;"></p>
+        </div>
+        <p class="field-lbl">Wind-down routine</p>
+        <div id="sleep-winddown-list" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;"></div>
+        <p class="field-lbl" style="margin-top:12px;">Tonight's goal</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'sgoal','Earlier bedtime','s')">Earlier bedtime</div>
+          <div class="chip" onclick="selChip(this,'sgoal','Better quality','s')">Better quality</div>
+          <div class="chip" onclick="selChip(this,'sgoal','Longer sleep','s')">Longer sleep</div>
+          <div class="chip" onclick="selChip(this,'sgoal','Consistent wake','s')">Consistent wake</div>
+        </div>
+        <button class="btn-primary" style="border-color:var(--s);background:var(--s-bg);color:var(--s-acc);margin-top:14px;" onclick="getAISleepPlan()">Get AI bedtime plan →</button>
+        <div id="sleep-ai-plan" style="display:none;margin-top:12px;" class="ai-card">
+          <p class="ai-tag">Your personalised plan</p>
+          <div id="sleep-ai-plan-loading" style="text-align:center;padding:10px;display:none;"><div class="spinner" style="border-top-color:var(--s);margin:0 auto;"></div></div>
+          <p class="ai-text" id="sleep-ai-plan-text"></p>
+        </div>
       </div>
-      <p class="field-lbl">Notes</p>
-      <textarea id="sleep-notes" placeholder="Woke up? Dreams? Stress level before bed..."></textarea>
-      <div class="ai-card" id="sleep-ai" style="display:none;">
-        <p class="ai-tag">Sleep insight</p>
-        <p class="ai-text" id="sleep-ai-text"></p>
+
+      <!-- TREND TAB -->
+      <div id="sleep-tab-trend" style="display:none;">
+        <p class="field-lbl">Last 7 nights</p>
+        <div id="sleep-trend-chart" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;"></div>
+        <div id="sleep-trend-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"></div>
+        <div id="sleep-trend-insights" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;"></div>
       </div>
+
     </div>
     <div class="modal-foot">
-      <button class="btn-primary" style="border-color:var(--s);background:var(--s-bg);color:var(--s-acc);" onclick="saveS()">Log sleep</button>
+      <button class="btn-primary" id="save-s-btn" style="border-color:var(--s);background:var(--s-bg);color:var(--s-acc);" onclick="saveS()">Log sleep</button>
       <button class="btn-ghost" onclick="closeModal('s')">Cancel</button>
     </div>
   </div>
@@ -1362,15 +1432,24 @@ function openModal(k){
     if(d.photoLog&&d.photoLog.length)renderPhotoLog();
   }
   if(k==='s'){
+    // Always start on log tab
+    switchSleepTab('log',document.getElementById('stab-log'));
     preSelectChip('shrs',d.shrs,'s');
     preSelectChip('squal',d.squal,'s');
     preSelectChip('sbed',d.sbed,'s');
+    preSelectChip('swake',d.swake,'s');
+    if(d.sfactors){
+      d.sfactors.split(' + ').forEach(f=>{
+        document.querySelectorAll('#modal-s .chip').forEach(c=>{
+          if(c.textContent.trim()===f)c.classList.add('active');
+        });
+      });
+    }
     document.getElementById('sleep-notes').value=d.sleepNotes||'';
     if(d.squal){
-      document.getElementById('sleep-ai-text').textContent=SLEEP_TIPS[d.squal]||'';
-      document.getElementById('sleep-ai').style.display='block';
+      updateSleepScore();
     }
-    const saveBtn=document.querySelector('#modal-s .btn-primary');
+    const saveBtn=document.getElementById('save-s-btn');
     if(saveBtn)saveBtn.textContent=S.checked.s?'Update sleep':'Log sleep';
     const foot=document.querySelector('#modal-s .modal-foot');
     let clrBtn=document.getElementById('clear-s');
@@ -3229,18 +3308,249 @@ function deletePhotoEntry(idx){
 }
 
 const SLEEP_TIPS={
-  'Poor':'Your sleep was poor last night. Try a 10-minute body scan meditation before bed tonight, avoid screens 45 minutes before sleep, and keep your room cool. Your exercise today may help deepen tomorrow\'s sleep.',
-  'Fair':'Fair sleep — you\'re close. A consistent bedtime within 30 minutes each night is the single most powerful habit. Your meditation practice directly improves sleep quality; try extending it by 5 minutes tonight.',
+  'Poor':'Your sleep was poor last night. Try a 10-minute body scan before bed, avoid screens 45 minutes before sleep, and keep your room cool. Exercise today may help deepen tomorrow\'s sleep.',
+  'Fair':'Fair sleep — you\'re close. A consistent bedtime within 30 minutes each night is the single most powerful habit. Your meditation practice directly improves sleep quality.',
   'Good':'Good sleep. Your MEDS habits are working together well. Keep your bedtime consistent and consider a brief evening walk after dinner to further deepen your sleep cycles.',
-  'Great':'Excellent sleep quality. This is what your MEDS routine is building toward. Whatever you did last night — the routine, the meal timing, the evening wind-down — replicate it.'
+  'Great':'Excellent sleep quality. Whatever you did last night — the routine, the meal timing, the evening wind-down — replicate it. This is what your MEDS routine is building toward.'
 };
 
-function saveS(){
-  const hrs=chips['shrs']||'7';const qual=chips['squal']||'Good';const notes=document.getElementById('sleep-notes').value;
-  S.checked.s=true;S.logs.s=parseFloat(hrs)||0;
-  S.details.shrs=hrs;S.details.squal=qual;S.details.sbed=chips['sbed']||'';S.details.sleepNotes=notes;
-  document.getElementById('sleep-ai-text').textContent=SLEEP_TIPS[qual]||SLEEP_TIPS['Good'];
+const SLEEP_SCORE_MSG={
+  Poor:{range:[0,39],color:'#e85a4a',msg:'Significant sleep debt detected. Prioritise an early bedtime tonight and reduce stimulants after noon.'},
+  Fair:{range:[40,59],color:'var(--d)',msg:'Below optimal. Small consistent changes to your bedtime routine will compound quickly.'},
+  Good:{range:[60,79],color:'var(--e)',msg:'Solid sleep. Fine-tune your wind-down routine to push toward excellent.'},
+  Great:{range:[80,100],color:'var(--s-acc)',msg:'Excellent recovery. Your body and mind are getting the rest they need to perform.'}
+};
+
+const WIND_DOWN={
+  default:['Dim lights 1 hour before bed','No screens 30 minutes before sleep','Set tomorrow\'s clothes and priorities','5-minute breathing or body scan','Keep bedroom cool — 65–68°F / 18–20°C'],
+  stress:['Write down 3 worries then close the notebook','Progressive muscle relaxation — 10 minutes','Chamomile tea or magnesium drink','Slow 4-7-8 breathing for 5 minutes','Gratitude journaling — 3 good things today'],
+  caffeine:['No caffeine after 12pm tomorrow','Drink a large glass of water now','Light stretching or yoga — 10 minutes','Cold shower if feeling wired','Lavender aromatherapy or pillow spray'],
+  alcohol:['Drink 2 glasses of water before bed','Avoid more alcohol — it fragments sleep cycles','Light snack if hungry — banana or cottage cheese','Keep room cooler than usual','Expect lighter sleep — plan for an earlier bedtime tomorrow']
+};
+
+function switchSleepTab(tab,btn){
+  ['log','tonight','trend'].forEach(t=>{
+    document.getElementById('sleep-tab-'+t).style.display=t===tab?'block':'none';
+  });
+  document.querySelectorAll('#modal-s .dtab').forEach(b=>b.className='dtab');
+  if(btn){btn.className='dtab active';btn.style.cssText='border-color:var(--s);background:var(--s-bg);color:var(--s-acc)';
+    document.querySelectorAll('#modal-s .dtab').forEach(b=>{if(b!==btn)b.style.cssText='';});}
+  if(tab==='tonight')renderTonightPlan();
+  if(tab==='trend')renderSleepTrend();
+}
+
+function computeSleepScore(){
+  const hrs=parseFloat(chips['shrs'])||0;
+  const qual=chips['squal']||'';
+  const bed=chips['sbed']||'';
+  const factors=getMulti('sfactors','');
+  if(!hrs&&!qual)return null;
+
+  let score=0;
+  // Hours component (0-40)
+  if(hrs>=8)score+=40;
+  else if(hrs>=7)score+=35;
+  else if(hrs>=6)score+=25;
+  else if(hrs>=5)score+=15;
+  else score+=5;
+
+  // Quality component (0-30)
+  const qualScore={Poor:0,Fair:10,Good:22,Great:30};
+  score+=qualScore[qual]||0;
+
+  // Bedtime component (0-15)
+  const bedScore={'Before 9pm':15,'9–10pm':12,'10–11pm':8,'After 11pm':3};
+  score+=bedScore[bed]||8;
+
+  // Factors component (-15 to +15)
+  const good=['Exercise today','Meditation','Consistent bedtime'];
+  const bad=['Caffeine after 2pm','Alcohol','Late meal','Screen time','Stress'];
+  good.forEach(f=>{if(factors.includes(f))score+=5;});
+  bad.forEach(f=>{if(factors.includes(f))score-=3;});
+
+  return Math.max(0,Math.min(100,Math.round(score)));
+}
+
+function updateSleepScore(){
+  const score=computeSleepScore();
+  const card=document.getElementById('sleep-score-card');
+  if(!card)return;
+  if(score===null){card.style.display='none';return;}
+  card.style.display='flex';
+  document.getElementById('sleep-score-val').textContent=score;
+  // Find matching range
+  const entry=Object.values(SLEEP_SCORE_MSG).find(e=>score>=e.range[0]&&score<=e.range[1])||SLEEP_SCORE_MSG.Good;
+  document.getElementById('sleep-score-val').style.color=entry.color;
+  document.getElementById('sleep-score-msg').textContent=entry.msg;
+  // Update insight
+  const qual=chips['squal']||'Good';
+  const tip=SLEEP_TIPS[qual]||SLEEP_TIPS['Good'];
+  const hrs=chips['shrs']||'';
+  const bed=chips['sbed']||'';
+  const factors=getMulti('sfactors','');
+  let insight=tip;
+  if(factors.includes('Caffeine after 2pm'))insight+=' Caffeine stays in your system for 6–8 hours — cutting it off at noon can add 30 minutes of deep sleep.';
+  if(factors.includes('Exercise today'))insight+=' Exercise today will help consolidate your sleep cycles tonight.';
+  if(factors.includes('Stress'))insight+=' Try writing down tomorrow\'s top 3 priorities before bed to offload mental load.';
+  document.getElementById('sleep-ai-text').textContent=insight;
   document.getElementById('sleep-ai').style.display='block';
+}
+
+function renderTonightPlan(){
+  // Calculate recommended bedtime based on last night + wake time
+  const wake=chips['swake']||'7–8am';
+  const hrs=parseFloat(chips['shrs'])||7;
+  const qual=chips['squal']||'Good';
+  const profile=S.profile||{};
+
+  // Target 8 hours — recommend bedtime based on desired wake time
+  const wakeHour={'Before 6am':5.5,'6–7am':6.5,'7–8am':7.5,'After 8am':9}[wake]||7.5;
+  const targetHrs=qual==='Poor'||qual==='Fair'?8.5:8;
+  let bedHour=wakeHour-targetHrs;
+  if(bedHour<0)bedHour+=24;
+  const bedStr=`${Math.floor(bedHour)===0?12:Math.floor(bedHour)>12?Math.floor(bedHour)-12:Math.floor(bedHour)}:${bedHour%1>=0.5?'30':'00'}${bedHour<12||bedHour>=24?'am':'pm'}`;
+
+  document.getElementById('sleep-bedtime-rec').textContent=bedStr;
+
+  const whyMap={
+    Poor:'You reported poor sleep last night. An earlier, consistent bedtime will help rebuild your sleep drive.',
+    Fair:'Fair sleep last night — targeting 8.5 hours tonight will help you recover and reset your rhythm.',
+    Good:'Good sleep last night. Maintaining this bedtime consistently will deepen your sleep quality over time.',
+    Great:'Excellent sleep last night. Keep this bedtime — your body has found its rhythm.'
+  };
+  document.getElementById('sleep-bedtime-why').textContent=whyMap[qual]||whyMap['Good'];
+
+  // Wind-down routine
+  const factors=getMulti('sfactors','');
+  let routine=WIND_DOWN.default;
+  if(factors.includes('Stress'))routine=[...WIND_DOWN.stress,...WIND_DOWN.default.slice(2)];
+  else if(factors.includes('Caffeine after 2pm'))routine=[...WIND_DOWN.caffeine,...WIND_DOWN.default.slice(2)];
+  else if(factors.includes('Alcohol'))routine=[...WIND_DOWN.alcohol,...WIND_DOWN.default.slice(2)];
+
+  const list=document.getElementById('sleep-winddown-list');
+  list.innerHTML='';
+  routine.slice(0,5).forEach((item,i)=>{
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);';
+    if(i===routine.length-1||i===4)row.style.borderBottom='none';
+    row.innerHTML=`<div style="width:18px;height:18px;border-radius:50%;background:var(--s-bg);border:1px solid var(--s);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--s-acc);flex-shrink:0;font-weight:500;">${i+1}</div>
+      <p style="font-size:12px;color:var(--text);line-height:1.5;">${item}</p>`;
+    list.appendChild(row);
+  });
+}
+
+async function getAISleepPlan(){
+  const key=getApiKey();
+  const planEl=document.getElementById('sleep-ai-plan');
+  const loadEl=document.getElementById('sleep-ai-plan-loading');
+  const textEl=document.getElementById('sleep-ai-plan-text');
+  planEl.style.display='block';
+  if(!key){
+    textEl.textContent='Add an API key in Profile to get a personalised AI sleep plan.';return;
+  }
+  loadEl.style.display='block';textEl.textContent='';
+  const d=S.details;const p=S.profile||{};
+  const prompt=`You are a sleep coach. Give a concise, personalised bedtime plan (5–6 sentences) for ${p.name||'this person'} based on:
+Last night: ${d.shrs||'?'} hours, quality ${d.squal||'?'}, bedtime ${d.sbed||'?'}
+Factors: ${getMulti('sfactors','none reported')}
+Tonight's goal: ${chips['sgoal']||'better sleep'}
+Other MEDS context: Meditated today: ${S.checked.m}, Exercised today: ${S.checked.e}
+Be direct, specific, and actionable. No bullet points — write as flowing advice.`;
+  try{
+    const text=await callVisionAPIText(prompt);
+    textEl.textContent=text.trim();
+  }catch(e){
+    textEl.textContent='Could not generate plan. Check your API key and try again.';
+  }finally{loadEl.style.display='none';}
+}
+
+function renderSleepTrend(){
+  const days=[];
+  for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*86400000);days.push(d.toISOString().split('T')[0]);}
+  const DAYS_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // Build chart
+  const chart=document.getElementById('sleep-trend-chart');
+  chart.innerHTML='';
+  const maxHrs=10;
+  const chartWrap=document.createElement('div');
+  chartWrap.style.cssText='display:flex;align-items:flex-end;gap:6px;height:80px;padding-bottom:20px;position:relative;';
+
+  const entries=days.map(date=>{
+    if(date===todayStr()&&S.checked.s)return{date,hrs:parseFloat(S.details.shrs)||0,qual:S.details.squal||'',checked:true};
+    const h=S.history.find(e=>e.date===date);
+    return h&&h.checked.s?{date,hrs:parseFloat(h.details.shrs)||0,qual:h.details.squal||'',checked:true}:{date,hrs:0,qual:'',checked:false};
+  });
+
+  const avgHrs=entries.filter(e=>e.checked).reduce((a,e)=>a+e.hrs,0)/(entries.filter(e=>e.checked).length||1);
+
+  entries.forEach((e,i)=>{
+    const col=document.createElement('div');
+    col.style.cssText='flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;';
+    const barH=e.checked?Math.round((e.hrs/maxHrs)*60):4;
+    const barColor=e.qual==='Great'?'var(--s-acc)':e.qual==='Good'?'var(--s)':e.qual==='Fair'?'var(--d)':e.qual==='Poor'?'#e85a4a':'var(--faint)';
+    const d=new Date(e.date+'T12:00:00');
+    const label=e.date===todayStr()?'Today':DAYS_SHORT[d.getDay()];
+    col.innerHTML=`<div style="font-size:9px;color:var(--muted);position:absolute;bottom:0;transform:translateX(0);">${label}</div>
+      ${e.checked?`<div style="font-size:9px;color:${barColor};font-weight:500;">${e.hrs}h</div>`:'<div style="font-size:9px;color:var(--faint);">–</div>'}
+      <div style="width:100%;background:${barColor};border-radius:3px 3px 0 0;height:${barH}px;min-height:4px;transition:height .4s;"></div>`;
+    chartWrap.appendChild(col);
+  });
+  chart.appendChild(chartWrap);
+
+  // Stats
+  const stats=document.getElementById('sleep-trend-stats');
+  stats.innerHTML='';
+  const qualCounts={Poor:0,Fair:0,Good:0,Great:0};
+  entries.filter(e=>e.checked&&e.qual).forEach(e=>qualCounts[e.qual]=(qualCounts[e.qual]||0)+1);
+  const bestQual=Object.entries(qualCounts).sort((a,b)=>b[1]-a[1])[0];
+  const daysLogged=entries.filter(e=>e.checked).length;
+  [
+    {val:avgHrs?avgHrs.toFixed(1)+'h':'–',lbl:'Avg sleep'},
+    {val:daysLogged+'/7',lbl:'Days logged'},
+    {val:bestQual&&bestQual[1]>0?bestQual[0]:'–',lbl:'Most common'},
+    {val:entries.filter(e=>e.hrs>=7).length+'/7',lbl:'7+ hr nights'}
+  ].forEach(s=>{
+    const c=document.createElement('div');
+    c.style.cssText='background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px;text-align:center;';
+    c.innerHTML=`<div style="font-size:20px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--s-acc);">${s.val}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px;">${s.lbl}</div>`;
+    stats.appendChild(c);
+  });
+
+  // Insights
+  const ins=document.getElementById('sleep-trend-insights');
+  ins.innerHTML='';
+  const insights=[];
+  if(avgHrs>0&&avgHrs<7)insights.push(`You're averaging ${avgHrs.toFixed(1)} hours — below the 7–9 hour recommendation. Try moving bedtime 30 minutes earlier this week.`);
+  else if(avgHrs>=7)insights.push(`Good average of ${avgHrs.toFixed(1)} hours this week. Consistency is key — aim to keep within 30 minutes of your usual bedtime.`);
+  if(qualCounts.Poor>2)insights.push('You\'ve had poor sleep multiple nights this week. Look for patterns — caffeine, late meals, or stress are common culprits.');
+  if(qualCounts.Great>=3)insights.push('Three or more great nights this week — excellent. Your MEDS routine is clearly supporting your sleep quality.');
+  if(daysLogged<4)insights.push('Log your sleep daily to unlock better trend insights and personalised recommendations.');
+  if(!insights.length)insights.push('Keep logging your sleep each morning for deeper weekly insights.');
+  insights.forEach(txt=>{
+    const p=document.createElement('p');
+    p.style.cssText='font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px;font-style:italic;font-family:\'DM Serif Display\',serif;';
+    p.textContent=txt;ins.appendChild(p);
+  });
+}
+
+function saveS(){
+  const hrs=chips['shrs']||'7';
+  const qual=chips['squal']||'Good';
+  const notes=document.getElementById('sleep-notes').value;
+  const wake=chips['swake']||'';
+  const factors=getMulti('sfactors','');
+  const score=computeSleepScore();
+  S.checked.s=true;
+  S.logs.s=parseFloat(hrs)||0;
+  S.details.shrs=hrs;
+  S.details.squal=qual;
+  S.details.sbed=chips['sbed']||'';
+  S.details.swake=wake;
+  S.details.sfactors=factors;
+  S.details.sleepScore=score;
+  S.details.sleepNotes=notes;
+  updateSleepScore();
   if(Object.values(S.checked).every(Boolean))S.score=computeScore();
   persistToday();renderAll();
 }
