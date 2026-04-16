@@ -557,6 +557,9 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
           <div class="score-track"><div class="score-fill" id="score-fill" style="width:0%"></div></div>
           <div class="score-msg" id="score-msg">Complete your pillars to get scored</div>
         </div>
+        <button onclick="shareTodayCard()" id="share-today-btn" title="Share today's score" style="background:none;border:none;cursor:pointer;padding:6px;flex-shrink:0;opacity:0.6;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0.6'">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="14" cy="3" r="2" stroke="var(--e)" stroke-width="1.5"/><circle cx="14" cy="15" r="2" stroke="var(--e)" stroke-width="1.5"/><circle cx="4" cy="9" r="2" stroke="var(--e)" stroke-width="1.5"/><line x1="12.3" y1="4" x2="5.7" y2="8" stroke="var(--e)" stroke-width="1.5"/><line x1="5.7" y1="10" x2="12.3" y2="14" stroke="var(--e)" stroke-width="1.5"/></svg>
+        </button>
       </div>
 
       <p class="sec-lbl">Your pillars</p>
@@ -717,6 +720,10 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);}
           </div>
         </div>
         <button class="report-gen-btn" id="rep-gen-btn" onclick="generateWeeklyReport()">Generate this week's report</button>
+        <button class="report-gen-btn" id="rep-share-btn" onclick="shareWeeklyCard()" style="display:none;background:transparent;border-color:var(--border);color:var(--muted);margin-top:6px;">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:middle;margin-right:4px;"><circle cx="14" cy="3" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="14" cy="15" r="2" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="9" r="2" stroke="currentColor" stroke-width="1.5"/><line x1="12.3" y1="4" x2="5.7" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="5.7" y1="10" x2="12.3" y2="14" stroke="currentColor" stroke-width="1.5"/></svg>
+          Share this report
+        </button>
         <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:2px;" id="rep-api-note"></p>
       </div>
     </div>
@@ -4268,6 +4275,341 @@ const COACH_MSGS=[
   'Rest is not the absence of effort. Recovery is where the real growth happens.'
 ];
 
+// ── SHARING ──────────────────────────────────────────────────
+
+function drawRoundedRect(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
+}
+
+function generateTodayCanvas(){
+  const canvas=document.createElement('canvas');
+  canvas.width=600;canvas.height=340;
+  const ctx=canvas.getContext('2d');
+  const p=S.profile||{};
+  const d=S.details||{};
+
+  // Background
+  ctx.fillStyle='#0a0f0d';
+  drawRoundedRect(ctx,0,0,600,340,20);ctx.fill();
+
+  // Subtle grid pattern
+  ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;
+  for(let i=0;i<600;i+=40){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,340);ctx.stroke();}
+  for(let i=0;i<340;i+=40){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(600,i);ctx.stroke();}
+
+  // Top accent line
+  const grad=ctx.createLinearGradient(0,0,600,0);
+  grad.addColorStop(0,'#3ecf8e');grad.addColorStop(1,'#1a6644');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,600,3);
+
+  // MEDS logo
+  ctx.font='bold 13px sans-serif';ctx.fillStyle='#3ecf8e';ctx.letterSpacing='0.15em';
+  ctx.fillText('MEDS',32,42);
+  ctx.font='11px sans-serif';ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.fillText('Daily Accountability',32,58);
+
+  // Date
+  const dateStr=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  ctx.font='11px sans-serif';ctx.fillStyle='rgba(255,255,255,0.4)';ctx.textAlign='right';
+  ctx.fillText(dateStr,568,42);
+
+  // Name
+  if(p.name){ctx.font='12px sans-serif';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.fillText(p.name,568,58);}
+  ctx.textAlign='left';
+
+  // Score — large
+  const score=S.score;
+  const scoreColor=score>=8?'#3ecf8e':score>=5?'#f4a730':score?'#e85a4a':'rgba(255,255,255,0.3)';
+  ctx.font='bold 80px sans-serif';ctx.fillStyle=scoreColor;
+  ctx.fillText(score||'–',32,155);
+  ctx.font='16px sans-serif';ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.fillText('/10',score&&score>=10?148:score>=10?148:score>9?130:120,155);
+  ctx.font='11px sans-serif';ctx.fillStyle='rgba(255,255,255,0.3)';ctx.letterSpacing='0.08em';
+  ctx.fillText('MEDS SCORE',32,174);
+
+  // Streak pill
+  ctx.letterSpacing='0';
+  drawRoundedRect(ctx,32,190,120,28,14);
+  ctx.fillStyle='rgba(62,207,142,0.12)';ctx.fill();
+  ctx.strokeStyle='rgba(62,207,142,0.4)';ctx.lineWidth=1;ctx.stroke();
+  ctx.font='12px sans-serif';ctx.fillStyle='#3ecf8e';
+  ctx.fillText('🔥 '+S.streak+' day streak',44,209);
+
+  // Pillar cards
+  const pillars=[
+    {k:'m',label:'Meditation',color:'#7c6af5'},
+    {k:'e',label:'Exercise',color:'#3ecf8e'},
+    {k:'d',label:'Diet',color:'#f4a730'},
+    {k:'s',label:'Sleep',color:'#6eb5ff'}
+  ];
+  const cardW=120,cardH=88,startX=32,cardY=240,gap=12;
+  pillars.forEach((pl,i)=>{
+    const x=startX+i*(cardW+gap);
+    const done=S.checked[pl.k];
+    drawRoundedRect(ctx,x,cardY,cardW,cardH,10);
+    ctx.fillStyle=done?'rgba(255,255,255,0.06)':'rgba(255,255,255,0.02)';ctx.fill();
+    ctx.strokeStyle=done?pl.color+'66':'rgba(255,255,255,0.08)';ctx.lineWidth=1;ctx.stroke();
+    // Dot
+    ctx.beginPath();ctx.arc(x+16,cardY+18,5,0,Math.PI*2);
+    ctx.fillStyle=done?pl.color:'rgba(255,255,255,0.15)';ctx.fill();
+    // Label
+    ctx.font='bold 11px sans-serif';ctx.fillStyle=done?pl.color:'rgba(255,255,255,0.3)';
+    ctx.fillText(pl.label,x+10,cardY+40);
+    // Detail
+    let detail='–';
+    if(done){
+      if(pl.k==='m'&&d.medDur)detail=d.medDur+' min';
+      else if(pl.k==='e'&&d.edur)detail=d.edur+' min';
+      else if(pl.k==='d')detail=(d.mealsChecked?Object.values(d.mealsChecked).flat().filter(Boolean).length:d.dmeals||'✓')+' meals';
+      else if(pl.k==='s'&&d.shrs)detail=d.shrs+' hrs';
+      else detail='Done';
+    }
+    ctx.font='12px sans-serif';ctx.fillStyle=done?'rgba(255,255,255,0.7)':'rgba(255,255,255,0.2)';
+    ctx.fillText(detail,x+10,cardY+58);
+    // Check
+    if(done){
+      ctx.font='14px sans-serif';ctx.fillStyle=pl.color;
+      ctx.fillText('✓',x+cardW-22,cardY+20);
+    }
+  });
+
+  // Footer watermark
+  ctx.font='10px sans-serif';ctx.fillStyle='rgba(255,255,255,0.15)';ctx.textAlign='right';
+  ctx.fillText('tr-gordon.github.io/meds-app',568,330);
+  ctx.textAlign='left';
+
+  return canvas;
+}
+
+function generateWeeklyCanvas(){
+  const canvas=document.createElement('canvas');
+  canvas.width=600;canvas.height=380;
+  const ctx=canvas.getContext('2d');
+  const p=S.profile||{};
+
+  // Background
+  ctx.fillStyle='#0a0f0d';
+  drawRoundedRect(ctx,0,0,600,380,20);ctx.fill();
+
+  // Top accent
+  const grad=ctx.createLinearGradient(0,0,600,0);
+  grad.addColorStop(0,'#3ecf8e');grad.addColorStop(1,'#1a6644');
+  ctx.fillStyle=grad;ctx.fillRect(0,0,600,3);
+
+  // Header
+  ctx.font='bold 13px sans-serif';ctx.fillStyle='#3ecf8e';
+  ctx.fillText('MEDS',32,42);
+  ctx.font='11px sans-serif';ctx.fillStyle='rgba(255,255,255,0.3)';
+  ctx.fillText('Weekly Report',32,58);
+  if(p.name){ctx.textAlign='right';ctx.fillText(p.name,568,42);ctx.textAlign='left';}
+
+  // Headline from AI report
+  const headline=S.weeklyReport&&S.weeklyReport.headline;
+  if(headline){
+    ctx.font='italic 15px serif';ctx.fillStyle='rgba(255,255,255,0.7)';
+    // Word wrap headline
+    const words=headline.split(' ');let line='';let y=100;
+    words.forEach(w=>{
+      const test=line+w+' ';
+      if(ctx.measureText(test).width>540&&line){ctx.fillText(line.trim(),32,y);line=w+' ';y+=22;}
+      else line=test;
+    });
+    if(line)ctx.fillText(line.trim(),32,y);
+  }
+
+  // Stats row
+  const week=[];
+  for(let i=6;i>=0;i--){const date=new Date(Date.now()-i*86400000).toISOString().split('T')[0];const h=S.history.find(e=>e.date===date);if(h)week.push(h);}
+  const scores=week.filter(e=>e.score).map(e=>e.score);
+  const avgScore=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+  const pillars={m:0,e:0,d:0,s:0};week.forEach(e=>{['m','e','d','s'].forEach(k=>{if(e.checked&&e.checked[k])pillars[k]++;});});
+
+  const stats=[
+    {val:avgScore||'–',label:'Avg score',color:avgScore>=8?'#3ecf8e':avgScore>=5?'#f4a730':'#e85a4a'},
+    {val:S.streak,label:'Day streak',color:'#3ecf8e'},
+    {val:week.length+'/7',label:'Days logged',color:'rgba(255,255,255,0.7)'},
+    {val:Math.round((Object.values(pillars).reduce((a,b)=>a+b,0)/(week.length*4||1))*100)+'%',label:'Completion',color:'rgba(255,255,255,0.7)'}
+  ];
+  const sw=128,sy=148,sx=32;
+  stats.forEach((s,i)=>{
+    const x=sx+i*(sw+8);
+    drawRoundedRect(ctx,x,sy,sw,70,8);
+    ctx.fillStyle='rgba(255,255,255,0.04)';ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;ctx.stroke();
+    ctx.font='bold 24px sans-serif';ctx.fillStyle=s.color;ctx.textAlign='center';
+    ctx.fillText(s.val,x+sw/2,sy+38);
+    ctx.font='10px sans-serif';ctx.fillStyle='rgba(255,255,255,0.35)';
+    ctx.fillText(s.label.toUpperCase(),x+sw/2,sy+56);
+    ctx.textAlign='left';
+  });
+
+  // Pillar bars
+  const barLabels={m:'Meditation',e:'Exercise',d:'Diet',s:'Sleep'};
+  const barColors={m:'#7c6af5',e:'#3ecf8e',d:'#f4a730',s:'#6eb5ff'};
+  let by=248;
+  ['m','e','d','s'].forEach(k=>{
+    const pct=pillars[k]/7;
+    ctx.font='11px sans-serif';ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.fillText(barLabels[k],32,by);
+    ctx.font='11px sans-serif';ctx.fillStyle=barColors[k];ctx.textAlign='right';
+    ctx.fillText(pillars[k]+'/7',568,by);ctx.textAlign='left';
+    // Track
+    drawRoundedRect(ctx,32,by+6,536,5,3);ctx.fillStyle='rgba(255,255,255,0.08)';ctx.fill();
+    // Fill
+    if(pct>0){drawRoundedRect(ctx,32,by+6,536*pct,5,3);ctx.fillStyle=barColors[k];ctx.fill();}
+    by+=30;
+  });
+
+  // Footer
+  ctx.font='10px sans-serif';ctx.fillStyle='rgba(255,255,255,0.15)';ctx.textAlign='right';
+  ctx.fillText('tr-gordon.github.io/meds-app',568,368);
+  ctx.textAlign='left';
+
+  return canvas;
+}
+
+function buildTodayText(){
+  const p=S.profile||{};const d=S.details||{};
+  const done=['m','e','d','s'].filter(k=>S.checked[k]);
+  const labels={m:'Meditation',e:'Exercise',d:'Diet',s:'Sleep'};
+  const emojis={m:'🧘',e:'💪',d:'🥗',s:'😴'};
+  const date=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  let text=`My MEDS score today: ${S.score||'–'}/10 🔥 ${S.streak}-day streak\n${date}${p.name?' · '+p.name:''}\n\n`;
+  ['m','e','d','s'].forEach(k=>{
+    const ok=S.checked[k];
+    text+=ok?'✅':'⬜';
+    text+=' '+emojis[k]+' '+labels[k];
+    if(ok){
+      if(k==='m'&&d.medDur)text+=' ('+d.medDur+' min'+(d.medType?' · '+d.medType:'')+')';
+      if(k==='e'&&d.edur)text+=' ('+d.edur+' min)';
+      if(k==='s'&&d.shrs)text+=' ('+d.shrs+' hrs)';
+    }
+    text+='\n';
+  });
+  text+='\ntr-gordon.github.io/meds-app';
+  return text;
+}
+
+function buildWeeklyText(){
+  const p=S.profile||{};
+  const week=[];
+  for(let i=6;i>=0;i--){const date=new Date(Date.now()-i*86400000).toISOString().split('T')[0];const h=S.history.find(e=>e.date===date);if(h)week.push(h);}
+  const scores=week.filter(e=>e.score).map(e=>e.score);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+  const pillars={m:0,e:0,d:0,s:0};week.forEach(e=>{['m','e','d','s'].forEach(k=>{if(e.checked&&e.checked[k])pillars[k]++;});});
+  let text=`My MEDS Weekly Report 📊\n`;
+  if(p.name)text+=p.name+' · ';
+  text+=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric'})+'  \n\n';
+  if(S.weeklyReport&&S.weeklyReport.headline)text+='"'+S.weeklyReport.headline+'"\n\n';
+  text+=`📈 Avg score: ${avg||'–'}/10\n`;
+  text+=`🔥 Streak: ${S.streak} days\n`;
+  text+=`📅 Days logged: ${week.length}/7\n\n`;
+  text+=`🧘 Meditation: ${pillars.m}/7 days\n`;
+  text+=`💪 Exercise: ${pillars.e}/7 days\n`;
+  text+=`🥗 Diet: ${pillars.d}/7 days\n`;
+  text+=`😴 Sleep: ${pillars.s}/7 days\n\n`;
+  text+='tr-gordon.github.io/meds-app';
+  return text;
+}
+
+async function doShare(canvas,text,title){
+  // Show share options modal
+  showShareModal(canvas,text,title);
+}
+
+function showShareModal(canvas,text,title){
+  // Remove any existing share modal
+  const existing=document.getElementById('share-modal-overlay');
+  if(existing)existing.remove();
+
+  const overlay=document.createElement('div');
+  overlay.id='share-modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:flex-end;justify-content:center;';
+
+  const sheet=document.createElement('div');
+  sheet.style.cssText='background:#111;border-radius:16px 16px 0 0;padding:20px 20px 32px;width:100%;max-width:480px;';
+
+  // Preview card
+  canvas.style.cssText='width:100%;border-radius:10px;margin-bottom:16px;display:block;';
+  sheet.appendChild(canvas);
+
+  // Buttons
+  const btns=[
+    {label:'Share via…',icon:'↗',action:async()=>{
+      try{
+        canvas.toBlob(async blob=>{
+          const file=new File([blob],'meds-score.png',{type:'image/png'});
+          if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+            await navigator.share({files:[file],title,text});
+          } else if(navigator.share){
+            await navigator.share({title,text});
+          } else {
+            await navigator.clipboard.writeText(text);
+            showToast('Copied to clipboard!');
+          }
+        },'image/png');
+      }catch(e){if(e.name!=='AbortError'){await navigator.clipboard.writeText(text);showToast('Copied to clipboard!');}}
+    }},
+    {label:'Copy image',icon:'🖼',action:()=>{
+      canvas.toBlob(async blob=>{
+        try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);showToast('Image copied!');}
+        catch(e){showToast('Use screenshot to save image');}
+      },'image/png');
+    }},
+    {label:'Copy text',icon:'📋',action:async()=>{
+      try{await navigator.clipboard.writeText(text);showToast('Text copied!');}
+      catch(e){showToast('Could not copy — try manually');}
+    }},
+    {label:'Save image',icon:'💾',action:()=>{
+      const a=document.createElement('a');a.href=canvas.toDataURL('image/png');
+      a.download='meds-score.png';a.click();showToast('Image saved!');
+    }}
+  ];
+
+  btns.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.style.cssText='width:100%;padding:13px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.9);font-size:14px;cursor:pointer;font-family:\'DM Sans\',sans-serif;margin-bottom:8px;display:flex;align-items:center;gap:10px;';
+    btn.innerHTML=`<span style="font-size:18px;">${b.icon}</span>${b.label}`;
+    btn.addEventListener('click',()=>{b.action();overlay.remove();});
+    sheet.appendChild(btn);
+  });
+
+  // Cancel
+  const cancel=document.createElement('button');
+  cancel.style.cssText='width:100%;padding:13px;border-radius:10px;border:none;background:transparent;color:rgba(255,255,255,0.4);font-size:14px;cursor:pointer;font-family:\'DM Sans\',sans-serif;margin-top:4px;';
+  cancel.textContent='Cancel';
+  cancel.addEventListener('click',()=>overlay.remove());
+  sheet.appendChild(cancel);
+
+  overlay.appendChild(sheet);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#1a2e24;border:1px solid var(--e);color:var(--e);padding:8px 18px;border-radius:20px;font-size:12px;z-index:99999;opacity:0;transition:opacity .3s;';
+  t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>t.style.opacity='1',50);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),300);},2500);
+}
+
+function shareTodayCard(){
+  const canvas=generateTodayCanvas();
+  const text=buildTodayText();
+  showShareModal(canvas,text,'My MEDS score today');
+}
+
+function shareWeeklyCard(){
+  const canvas=generateWeeklyCanvas();
+  const text=buildWeeklyText();
+  showShareModal(canvas,text,'My MEDS Weekly Report');
+}
+// ── END SHARING ───────────────────────────────────────────────
+
 function renderCoach(){
   const done=Object.values(S.checked).filter(Boolean).length;
   const p=S.profile;const name=p&&p.name?p.name.split(' ')[0]:'';
@@ -4464,6 +4806,8 @@ Write a warm, honest, personalized weekly report. Return ONLY valid JSON, no mar
     document.getElementById('report-loading').style.display='none';
     document.getElementById('rep-gen-btn').style.display='block';
     document.getElementById('rep-gen-btn').textContent='Regenerate report';
+    const shareBtn=document.getElementById('rep-share-btn');
+    if(shareBtn)shareBtn.style.display='block';
   }
 }
 
