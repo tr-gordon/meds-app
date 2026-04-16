@@ -996,6 +996,21 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
           </div>
           <button class="btn-primary" style="margin-top:8px;" onclick="switchExTab('week');document.getElementById('etab-week').click()">Set up weekly plan →</button>
         </div>
+
+        <!-- Rest day section — always visible -->
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+          <p class="field-lbl" style="margin-top:0;">Rest day type <span style="color:var(--muted);font-size:10px;font-weight:400;text-transform:none;">optional</span></p>
+          <div class="chip-row">
+            <div class="chip" onclick="selChip(this,'erest','Full rest','e')">Full rest</div>
+            <div class="chip" onclick="selChip(this,'erest','Active recovery','e')">Active recovery</div>
+            <div class="chip" onclick="selChip(this,'erest','Light walk','e')">Light walk</div>
+            <div class="chip" onclick="selChip(this,'erest','Stretching','e')">Stretching</div>
+            <div class="chip" onclick="selChip(this,'erest','Foam rolling','e')">Foam rolling</div>
+          </div>
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-top:12px;">
+            <p style="font-size:12px;color:var(--muted);line-height:1.6;">Rest days are as important as training days. Recovery is when your muscles rebuild and grow stronger. Logging a rest day counts toward your MEDS score.</p>
+          </div>
+        </div>
       </div>
 
       <!-- WEEKLY PLAN TAB -->
@@ -1044,6 +1059,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
     </div>
     <div class="modal-foot">
       <button class="btn-primary" id="save-e-btn" style="display:none;" onclick="saveE()">Log today's workout</button>
+      <button class="btn-primary" id="save-e-rest-btn" style="border-color:var(--muted);background:transparent;color:var(--muted);" onclick="saveERest()">Log rest day ✓</button>
       <button class="btn-ghost" onclick="closeModal('e')">Cancel</button>
     </div>
   </div>
@@ -1575,6 +1591,25 @@ function openModal(k){
   }
   if(k==='e'){
     loadTodayExercise();
+    // Restore rest chip if previously logged as rest
+    if(S.details.eIsRest&&S.details.wtype){
+      preSelectChip('erest',S.details.wtype,'e');
+    }
+    // Update rest button appearance if already logged
+    const restBtn=document.getElementById('save-e-rest-btn');
+    if(restBtn){
+      if(S.checked.e&&S.details.eIsRest){
+        restBtn.textContent='Update rest day';
+        restBtn.style.borderColor='var(--e)';
+        restBtn.style.color='var(--e)';
+        restBtn.style.background='var(--e-bg)';
+      } else {
+        restBtn.textContent='Log rest day ✓';
+        restBtn.style.borderColor='var(--muted)';
+        restBtn.style.color='var(--muted)';
+        restBtn.style.background='transparent';
+      }
+    }
     const foot=document.querySelector('#modal-e .modal-foot');
     let clrBtn=document.getElementById('clear-e');
     if(S.checked.e&&!clrBtn){
@@ -1675,7 +1710,7 @@ function updateWorkoutItem(el,idx){
 function clearPillar(k){
   if(!confirm('Clear your '+{m:'meditation',e:'exercise',d:'diet',s:'sleep'}[k]+' log for today?'))return;
   S.checked[k]=false;S.logs[k]=0;
-  const keys={m:['medDur','medType','medNotes'],e:['edur','wtype','muscle','intensity','workoutItems','workoutDone'],d:['dmeals','dgoal','dpref','photoLog','totalCalories'],s:['shrs','squal','sbed','sleepNotes']};
+  const keys={m:['medDur','medType','medNotes'],e:['edur','wtype','muscle','intensity','workoutItems','workoutDone','eIsRest'],d:['dmeals','dgoal','dpref','photoLog','totalCalories'],s:['shrs','squal','sbed','sleepNotes']};
   (keys[k]||[]).forEach(key=>delete S.details[key]);
   S.score=null;
   persistToday();renderAll();closeModal(k);
@@ -1769,9 +1804,14 @@ function openHistoryModal(date){
 
       if(k==='e'){
         html+='<div style="display:flex;flex-direction:column;gap:0;">';
-        if(d.wtype)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Type</span><span class="hd-detail-val">${d.wtype}${d.muscle?' — '+d.muscle:''}</span></div>`;
-        if(d.edur)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Duration</span><span class="hd-detail-val">${d.edur} min</span></div>`;
-        if(d.intensity)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Intensity</span><span class="hd-detail-val">${d.intensity}</span></div>`;
+        if(d.eIsRest){
+          html+=`<div class="hd-detail-row"><span class="hd-detail-label">Type</span><span class="hd-detail-val" style="color:var(--muted);">🛌 ${d.wtype||'Rest day'}</span></div>`;
+          html+=`<div class="hd-detail-row"><span class="hd-detail-label">Note</span><span class="hd-detail-val" style="font-style:italic;color:var(--muted);">Recovery counts — rest days are part of the plan.</span></div>`;
+        } else {
+          if(d.wtype)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Type</span><span class="hd-detail-val">${d.wtype}${d.muscle?' — '+d.muscle:''}</span></div>`;
+          if(d.edur)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Duration</span><span class="hd-detail-val">${d.edur} min</span></div>`;
+          if(d.intensity)html+=`<div class="hd-detail-row"><span class="hd-detail-label">Intensity</span><span class="hd-detail-val">${d.intensity}</span></div>`;
+        }
         html+='</div>';
       }
 
@@ -1871,7 +1911,13 @@ function renderCard(k){
   else{chk.classList.remove('checked');card.classList.remove('done');}
   const d=S.details;
   if(k==='m'){sub.textContent=done?(d.medDur?d.medDur+' min'+(d.medType?' · '+d.medType:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.m||0,10)+'%';}
-  else if(k==='e'){sub.textContent=done?(d.edur?d.edur+' min'+(d.wtype?' · '+d.wtype:''):'Done'):'Tap to log';pb.style.width=done?'100%':pct(S.logs.e||0,30)+'%';}
+  else if(k==='e'){
+    if(done){
+      if(d.eIsRest)sub.textContent=d.wtype||'Rest day';
+      else sub.textContent=d.edur?d.edur+' min'+(d.wtype?' · '+d.wtype:''):'Done';
+    }else{sub.textContent='Tap to log';}
+    pb.style.width=done?'100%':pct(S.logs.e||0,30)+'%';
+  }
   else if(k==='d'){
     const FULL_DAYS_D=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
     const todayD=FULL_DAYS_D[new Date().getDay()];
@@ -2228,6 +2274,19 @@ function generateWorkout(){
   });
   document.getElementById('workout-result').style.display='block';
   document.getElementById('save-e-btn').style.display='block';
+}
+
+function saveERest(){
+  const restType=chips['erest']||'Rest day';
+  S.checked.e=true;
+  S.logs.e=0;
+  S.details.edur='';
+  S.details.wtype=restType;
+  S.details.muscle='';
+  S.details.intensity='';
+  S.details.eIsRest=true;
+  if(Object.values(S.checked).every(Boolean))S.score=computeScore();
+  persistToday();renderAll();closeModal('e');
 }
 
 function saveE(){
