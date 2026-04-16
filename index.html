@@ -1521,7 +1521,16 @@ function resetApp(){
   location.reload();
 }
 
-function todayStr(){return new Date().toISOString().split('T')[0];}
+function todayStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function localDateStr(date){
+  return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+}
+function daysAgoStr(n){
+  const d=new Date();d.setDate(d.getDate()-n);return localDateStr(d);
+}
 
 function showTab(tab,btn){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -3700,7 +3709,7 @@ function loadPhotoLog(){
     }
     // Clean up old photo log keys — but first save analysis results into history
     const keys=Object.keys(localStorage).filter(k=>k.startsWith('meds-photolog-'));
-    const cutoff=new Date(Date.now()-7*86400000).toISOString().split('T')[0];
+    const cutoff=daysAgoStr(7);
     let historyChanged=false;
     keys.forEach(k=>{
       const date=k.replace('meds-photolog-','');
@@ -3978,7 +3987,7 @@ Be direct, specific, and actionable. No bullet points — write as flowing advic
 
 function renderSleepTrend(){
   const days=[];
-  for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*86400000);days.push(d.toISOString().split('T')[0]);}
+  for(let i=6;i>=0;i--){days.push(daysAgoStr(i));}
   const DAYS_SHORT=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
   // Build chart
@@ -4070,9 +4079,13 @@ function saveS(){
 function persistToday(){
   const today=todayStr();
   const done=Object.values(S.checked).filter(Boolean).length;
-  if(done===4){
-    const yest=new Date(Date.now()-86400000).toISOString().split('T')[0];
-    if(S.lastDate!==today){S.streak=S.lastDate===yest?S.streak+1:1;S.lastDate=today;}
+  // Streak increments when at least 1 pillar is logged any day
+  if(done>=1){
+    const yest=daysAgoStr(1);
+    if(S.lastDate!==today){
+      S.streak=S.lastDate===yest?S.streak+1:1;
+      S.lastDate=today;
+    }
   }
   const idx=S.history.findIndex(h=>h.date===today);
   const entry={date:today,checked:{...S.checked},logs:{...S.logs},details:{...S.details},score:S.score};
@@ -4198,7 +4211,7 @@ function renderAchievements(){
 
 function renderTrends(){
   const grid=document.getElementById('trend-grid');grid.innerHTML='';
-  const days=[];for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*86400000);days.push(d.toISOString().split('T')[0]);}
+  const days=[];for(let i=6;i>=0;i--){days.push(daysAgoStr(i));}
   days.forEach(date=>{
     // For today use live state, for past days use history
     const isToday=date===todayStr();
@@ -4462,7 +4475,7 @@ function generateWeeklyCanvas(){
 
   // Stats row
   const week=[];
-  for(let i=6;i>=0;i--){const date=new Date(Date.now()-i*86400000).toISOString().split('T')[0];const h=S.history.find(e=>e.date===date);if(h)week.push(h);}
+  for(let i=6;i>=0;i--){const date=daysAgoStr(i);const h=S.history.find(e=>e.date===date);if(h)week.push(h);}
   const scores=week.filter(e=>e.score).map(e=>e.score);
   const avgScore=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
   const pillars={m:0,e:0,d:0,s:0};week.forEach(e=>{['m','e','d','s'].forEach(k=>{if(e.checked&&e.checked[k])pillars[k]++;});});
@@ -4536,7 +4549,7 @@ function buildTodayText(){
 function buildWeeklyText(){
   const p=S.profile||{};
   const week=[];
-  for(let i=6;i>=0;i--){const date=new Date(Date.now()-i*86400000).toISOString().split('T')[0];const h=S.history.find(e=>e.date===date);if(h)week.push(h);}
+  for(let i=6;i>=0;i--){const date=daysAgoStr(i);const h=S.history.find(e=>e.date===date);if(h)week.push(h);}
   const scores=week.filter(e=>e.score).map(e=>e.score);
   const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
   const pillars={m:0,e:0,d:0,s:0};week.forEach(e=>{['m','e','d','s'].forEach(k=>{if(e.checked&&e.checked[k])pillars[k]++;});});
@@ -4696,7 +4709,7 @@ function switchCoachTab(tab,btn){
 
 function buildWeekData(){
   const days=[];
-  for(let i=6;i>=0;i--){const d=new Date(Date.now()-i*86400000);days.push(d.toISOString().split('T')[0]);}
+  for(let i=6;i>=0;i--){days.push(daysAgoStr(i));}
   const week=days.map(date=>{
     if(date===todayStr())return{date,checked:{...S.checked},logs:{...S.logs},details:{...S.details},score:S.score};
     return S.history.find(h=>h.date===date)||null;
