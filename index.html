@@ -1823,7 +1823,7 @@ function openHistoryModal(date){
         const planEntry=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(dy=>dy.day===dayName):null;
         const dayChecks=d.mealsChecked&&d.mealsChecked[dayName]||[];
         if(planEntry&&planEntry.meals&&planEntry.meals.length){
-          const eaten=planEntry.meals.filter((_,i)=>dayChecks[i]);
+          const eaten=planEntry.meals.filter((_,i)=>{const v=dayChecks[i];return v===true||(v&&v.done);});
           const total=planEntry.meals.length;
           html+=`<div class="hd-detail-row"><span class="hd-detail-label">Meal plan</span><span class="hd-detail-val">${eaten.length}/${total} meals eaten</span></div>`;
           if(eaten.length){
@@ -1924,7 +1924,7 @@ function renderCard(k){
     const tE=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(dy=>dy.day===todayD):null;
     const total=tE?(tE.meals||[]).length:parseInt(d.dmeals)||0;
     const checkedArr=d.mealsChecked&&d.mealsChecked[todayD]||[];
-    const numChecked=checkedArr.filter(Boolean).length;
+    const numChecked=checkedArr.filter(v=>v===true||(v&&v.done)).length;
     if(done){
       sub.textContent=numChecked>0?numChecked+' of '+total+' meals eaten':total+' meals planned';
       pb.style.width=total>0?Math.round((numChecked/total)*100)+'%':'100%';
@@ -2357,7 +2357,7 @@ function saveD(){
   const todayEntry=S.weeklyMealPlan?(S.weeklyMealPlan.days||[]).find(d=>d.day===todayFull):null;
   const mealCount=todayEntry?(todayEntry.meals||[]).length:3;
   const checked=S.details.mealsChecked&&S.details.mealsChecked[todayFull]||[];
-  const checkedCount=checked.filter(Boolean).length;
+  const checkedCount=checked.filter(v=>v&&(v===true||v.done)).length;
   S.checked.d=true;
   S.logs.d=checkedCount||mealCount;
   S.details.dmeals=String(mealCount);
@@ -2474,18 +2474,21 @@ function loadTodayMeal(){
   const list=document.getElementById('diet-today-plan-list');
   list.innerHTML='';
 
-  // mealsChecked is a per-day array of booleans stored in S.details
+  // mealsChecked is a per-day array of {done, time} objects stored in S.details
   if(!S.details.mealsChecked)S.details.mealsChecked={};
   if(!S.details.mealsChecked[todayFull])S.details.mealsChecked[todayFull]=[];
   const checked=S.details.mealsChecked[todayFull];
 
+  // Migrate legacy boolean format to object format
+  checked.forEach((v,i)=>{
+    if(typeof v==='boolean')checked[i]={done:v,time:''};
+  });
+
   function saveMealChecks(){
-    // Count how many are checked
-    const numChecked=checked.filter(Boolean).length;
+    const numChecked=checked.filter(v=>v&&(v.done||v===true)).length;
     const total=todayEntry?(todayEntry.meals||[]).length:0;
     S.details.dmeals=String(total);
     S.logs.d=numChecked;
-    // Mark diet pillar done when at least one meal is checked
     if(numChecked>0){
       S.checked.d=true;
       if(Object.values(S.checked).every(Boolean))S.score=computeScore();
@@ -2501,12 +2504,28 @@ function loadTodayMeal(){
 
   if(todayEntry&&todayEntry.meals){
     todayEntry.meals.forEach((meal,i)=>{
-      const isDone=!!checked[i];
+      // Normalise entry
+      if(!checked[i])checked[i]={done:false,time:''};
+      if(typeof checked[i]==='boolean')checked[i]={done:checked[i],time:''};
+      const entry=checked[i];
+      const isDone=!!entry.done;
+
       const card=makeMealCard(
         meal, i, dayIdx,
         (nowDone)=>{
-          checked[i]=nowDone;
+          // Auto-stamp time on check, clear on uncheck
+          checked[i]={
+            done:nowDone,
+            time:nowDone?getCurrentTimeStr():''
+          };
           S.details.mealsChecked[todayFull]=checked;
+          // Update the time display on the card
+          const timeEl=card.querySelector('.meal-time-display');
+          if(timeEl){
+            timeEl.style.display=nowDone?'flex':'none';
+            const inp=timeEl.querySelector('input[type="time"]');
+            if(inp&&nowDone)inp.value=checked[i].time;
+          }
           saveMealChecks();
         },
         (newVal)=>{
@@ -2515,7 +2534,13 @@ function loadTodayMeal(){
             saveStateLS(S);
           }
         },
-        isDone
+        isDone,
+        entry.time,
+        (newTime)=>{
+          checked[i]={done:true,time:newTime};
+          S.details.mealsChecked[todayFull]=checked;
+          saveStateLS(S);
+        }
       );
       list.appendChild(card);
     });
@@ -3485,7 +3510,20 @@ function getMealSearchTerm(mealStr){
   return main;
 }
 
-function makeMealCard(meal, mealIdx, dayIdx, onCheck, onEdit, isDone){
+function getCurrentTimeStr(){
+  const now=new Date();
+  return String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+}
+
+function formatTimeDisplay(timeStr){
+  if(!timeStr)return'';
+  const [h,m]=timeStr.split(':').map(Number);
+  const ampm=h>=12?'PM':'AM';
+  const h12=h%12||12;
+  return h12+':'+(m<10?'0':'')+m+' '+ampm;
+}
+
+function makeMealCard(meal, mealIdx, dayIdx, onCheck, onEdit, isDone, mealTime, onTimeEdit){
   const searchTerm=getMealSearchTerm(meal);
   const recipeQuery=encodeURIComponent(searchTerm+' recipe');
   const recipeUrl='https://www.google.com/search?q='+recipeQuery;
@@ -3530,6 +3568,35 @@ function makeMealCard(meal, mealIdx, dayIdx, onCheck, onEdit, isDone){
   if(label){
     const meta=document.createElement('div');meta.className='meal-card-meta';meta.style.marginLeft='24px';
     meta.textContent=label;body.appendChild(meta);
+  }
+
+  // Time stamp — only shown when onTimeEdit is provided (Today view) and meal is done
+  if(onTimeEdit!==undefined){
+    const timeRow=document.createElement('div');
+    timeRow.className='meal-time-display';
+    timeRow.style.cssText='display:'+(isDone?'flex':'none')+';align-items:center;gap:6px;margin-left:24px;margin-top:4px;margin-bottom:2px;';
+    // Clock icon
+    timeRow.innerHTML='<svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="5.5" cy="5.5" r="4.5" stroke="var(--d)" stroke-width="1"/><path d="M5.5 3v2.5l1.5 1" stroke="var(--d)" stroke-width="1" stroke-linecap="round"/></svg>';
+    // Time input — styled minimally
+    const timeInp=document.createElement('input');
+    timeInp.type='time';
+    timeInp.value=mealTime||'';
+    timeInp.style.cssText='background:none;border:none;color:var(--d);font-size:11px;font-family:\'DM Sans\',sans-serif;padding:0;cursor:pointer;width:80px;-webkit-appearance:none;outline:none;';
+    timeInp.addEventListener('change',()=>{
+      if(onTimeEdit)onTimeEdit(timeInp.value);
+    });
+    // Show formatted time as label, input on tap
+    const timeLabel=document.createElement('span');
+    timeLabel.style.cssText='font-size:11px;color:var(--d);cursor:pointer;';
+    timeLabel.textContent=isDone&&mealTime?formatTimeDisplay(mealTime):'Tap to set time';
+    timeLabel.addEventListener('click',()=>timeInp.showPicker&&timeInp.showPicker());
+    // Update label when input changes
+    timeInp.addEventListener('change',()=>{
+      timeLabel.textContent=formatTimeDisplay(timeInp.value)||'Tap to set time';
+    });
+    timeRow.appendChild(timeInp);
+    timeRow.appendChild(timeLabel);
+    body.appendChild(timeRow);
   }
 
   // Nutrition blurb
@@ -4318,7 +4385,7 @@ function renderTrends(){
     const dayName=date===todayStr()?'Today':FULL_DAYS[d.getDay()];
     const photoLog=det.photoLog||[];
     const mealsChecked=det.mealsChecked||{};
-    const checkedForDay=Object.values(mealsChecked).flat().filter(Boolean);
+    const checkedForDay=Object.values(mealsChecked).flat().filter(v=>v===true||(v&&v.done));
     // Build what to display
     const block=document.createElement('div');block.className='diet-trend-day';
     // Header
@@ -4333,11 +4400,12 @@ function renderTrends(){
     const dayChecks=det.mealsChecked?det.mealsChecked[FULL_DAYS[d.getDay()]]||[]:[];
     if(planMeals.length){
       planMeals.forEach((meal,i)=>{
-        const done=!!dayChecks[i];
+        const v=dayChecks[i];const done=v===true||(v&&v.done);
+        const timeStr=v&&v.time?formatTimeDisplay(v.time):'';
         const row=document.createElement('div');row.className='diet-trend-meal';
         row.innerHTML='<div class="diet-trend-dot" style="background:'+(done?'var(--d)':'var(--faint)')+'"></div>'+
           '<div class="diet-trend-name" style="'+(done?'':'color:var(--muted);')+'">'+meal+'</div>'+
-          '<div class="diet-trend-cals">'+(done?'✓':'')+'</div>';
+          '<div class="diet-trend-cals" style="font-size:10px;color:var(--muted);">'+(done&&timeStr?timeStr:'')+'</div>';
         block.appendChild(row);
         hasContent=true;
       });
@@ -4476,7 +4544,7 @@ function generateTodayCanvas(){
     if(done){
       if(pl.k==='m'&&d.medDur)detail=d.medDur+' min';
       else if(pl.k==='e'&&d.edur)detail=d.edur+' min';
-      else if(pl.k==='d')detail=(d.mealsChecked?Object.values(d.mealsChecked).flat().filter(Boolean).length:d.dmeals||'✓')+' meals';
+      else if(pl.k==='d')detail=(d.mealsChecked?Object.values(d.mealsChecked).flat().filter(v=>v===true||(v&&v.done)).length:d.dmeals||'✓')+' meals';
       else if(pl.k==='s'&&d.shrs)detail=d.shrs+' hrs';
       else detail='Done';
     }
