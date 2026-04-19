@@ -358,39 +358,60 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
 /* ONBOARDING */
 .onboard{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;max-width:430px;margin:0 auto;}
 .onboard-slides{flex:1;overflow:hidden;position:relative;}
-.onboard-slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:calc(var(--safe-top) + 40px) 28px 28px;opacity:0;transform:translateX(40px);transition:all .35s cubic-bezier(.4,0,.2,1);pointer-events:none;}
+.onboard-slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:calc(var(--safe-top) + 36px) 28px 28px;opacity:0;transform:translateX(50px);transition:all .38s cubic-bezier(.4,0,.2,1);pointer-events:none;overflow-y:auto;}
 .onboard-slide.active{opacity:1;transform:translateX(0);pointer-events:all;}
-.onboard-slide.exit{opacity:0;transform:translateX(-40px);}
-.onboard-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;}
-.onboard-eyebrow{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
-.onboard-heading{font-size:28px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--text);line-height:1.25;margin-bottom:10px;}
+.onboard-slide.exit{opacity:0;transform:translateX(-50px);}
+.onboard-eyebrow{font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;font-weight:500;}
+.onboard-heading{font-size:32px;font-weight:300;font-family:'DM Serif Display',serif;color:var(--text);line-height:1.2;margin-bottom:12px;letter-spacing:-.01em;}
 .onboard-heading em{color:var(--e);font-style:italic;}
-.onboard-sub{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:28px;}
-.onboard-fields{flex:1;overflow-y:auto;}
+.onboard-sub{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:28px;}
+.onboard-fields{flex:1;}
 .onboard-foot{padding:20px 28px calc(var(--safe-bot) + 20px);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:10px;}
-.onboard-dots{display:flex;gap:6px;justify-content:center;margin-bottom:4px;}
-.odot{width:6px;height:6px;border-radius:50%;background:var(--faint);transition:all .2s;}
-.odot.active{background:var(--e);width:18px;border-radius:3px;}
-.ob-field{margin-bottom:16px;}
-.ob-field label{display:block;font-size:11px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:7px;}
-.ob-field input{width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;-webkit-appearance:none;}
-.ob-field input:focus{outline:none;border-color:var(--e);}
-.weight-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-.weight-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:border-color .2s;}
-.weight-card.active-m{border-color:var(--m);}
-.weight-card.active-e{border-color:var(--e);}
-.weight-card.active-d{border-color:var(--d);}
-.weight-card.active-s{border-color:var(--s);}
-.weight-card-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px;}
-.weight-card-val{font-size:20px;font-weight:300;font-family:'DM Serif Display',serif;}
-.weight-card-val.wm{color:var(--m-acc);}
-.weight-card-val.we{color:var(--e-acc);}
-.weight-card-val.wd{color:var(--d-acc);}
-.weight-card-val.ws{color:var(--s-acc);}
-.weight-note{font-size:11px;color:var(--muted);text-align:center;margin-top:4px;}
-.goal-chip-row{display:flex;flex-wrap:wrap;gap:7px;}
-.goal-chip{padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;font-size:13px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;}
-.goal-chip.sel{border-color:var(--e);background:var(--e-bg);color:var(--e);}
+.onboard-dots{display:flex;gap:6px;justify-content:center;margin-bottom:6px;}
+.odot{width:6px;height:6px;border-radius:50%;background:var(--faint);transition:all .3s cubic-bezier(.4,0,.2,1);}
+.odot.active{background:var(--e);width:20px;border-radius:3px;}
+.ob-field{margin-bottom:18px;}
+.ob-field label{display:block;font-size:11px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px;}
+.ob-field input{width:100%;padding:14px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:16px;font-family:'DM Sans',sans-serif;-webkit-appearance:none;transition:border-color .2s;}
+.ob-field input:focus{outline:none;border-color:var(--e);background:var(--bg2);}
+.goal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.goal-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 12px;cursor:pointer;transition:all .2s;text-align:left;}
+.goal-card:active{transform:scale(.97);}
+.goal-card.sel{border-color:var(--e);background:var(--e-bg);}
+.goal-card-icon{font-size:20px;margin-bottom:6px;}
+.goal-card-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.goal-card.sel .goal-card-name{color:var(--e-acc);}
+.goal-card-desc{font-size:11px;color:var(--muted);line-height:1.4;}
+.focus-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.focus-card{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:16px 14px;cursor:pointer;transition:all .2s;text-align:center;}
+.focus-card:active{transform:scale(.97);}
+.focus-card.sel-m{border-color:var(--m);background:var(--m-bg);}
+.focus-card.sel-e{border-color:var(--e);background:var(--e-bg);}
+.focus-card.sel-d{border-color:var(--d);background:var(--d-bg);}
+.focus-card.sel-s{border-color:var(--s);background:var(--s-bg);}
+.focus-card-icon{font-size:22px;margin-bottom:8px;}
+.focus-card-name{font-size:13px;font-weight:500;color:var(--muted);}
+.focus-card.sel-m .focus-card-name{color:var(--m-acc);}
+.focus-card.sel-e .focus-card-name{color:var(--e-acc);}
+.focus-card.sel-d .focus-card-name{color:var(--d-acc);}
+.focus-card.sel-s .focus-card-name{color:var(--s-acc);}
+.target-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border);}
+.target-row:last-child{border-bottom:none;}
+.target-left{display:flex;align-items:center;gap:10px;}
+.target-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.target-label{font-size:13px;color:var(--text);font-weight:500;}
+.target-hint{font-size:11px;color:var(--muted);}
+.target-chips{display:flex;gap:6px;}
+.target-chip{padding:6px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.target-chip.sel{background:var(--e-bg);border-color:var(--e);color:var(--e-acc);}
+.ob-pillar-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:8px;animation:fadeSlideIn .4s ease both;}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.ob-pillar-row:nth-child(2){animation-delay:.06s;}
+.ob-pillar-row:nth-child(3){animation-delay:.12s;}
+.ob-pillar-row:nth-child(4){animation-delay:.18s;}
+.ob-pillar-ico{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ob-meds-logo{font-size:52px;font-weight:300;font-family:'DM Serif Display',serif;font-style:italic;color:var(--e);line-height:1;margin-bottom:16px;letter-spacing:-.03em;}
+.ob-welcome-tagline{font-size:16px;color:var(--muted);line-height:1.65;margin-bottom:36px;}
 
 /* PROFILE TAB */
 .profile-section{margin-bottom:20px;}
@@ -408,116 +429,177 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
 <div class="onboard" id="onboard" style="display:none;">
   <div class="onboard-slides">
 
-    <!-- Slide 1: Welcome -->
+    <!-- Slide 0: Welcome -->
     <div class="onboard-slide active" id="slide-0">
       <div style="flex:1;display:flex;flex-direction:column;justify-content:center;">
-        <p class="onboard-eyebrow">Welcome</p>
-        <h1 class="onboard-heading">Your daily <em>MEDS</em> start here.</h1>
-        <p class="onboard-sub">Meditation. Exercise. Diet. Sleep. Four pillars. One daily score. A calmer, stronger you.</p>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border);">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--m-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="var(--m)"/></svg></div>
-            <div><p style="font-size:13px;font-weight:500;color:var(--m-acc);">Meditation</p><p style="font-size:11px;color:var(--muted);">Log sessions, track types, build focus</p></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border);">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--e-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="7,1 13,13 1,13" fill="var(--e)"/></svg></div>
-            <div><p style="font-size:13px;font-weight:500;color:var(--e-acc);">Exercise</p><p style="font-size:11px;color:var(--muted);">AI-generated routines, tracked daily</p></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border);">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--d-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14"><rect x="2" y="2" width="10" height="10" rx="2" fill="var(--d)"/></svg></div>
-            <div><p style="font-size:13px;font-weight:500;color:var(--d-acc);">Diet</p><p style="font-size:11px;color:var(--muted);">Meal plans + AI food photo analysis</p></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border);">
-            <div style="width:32px;height:32px;border-radius:8px;background:var(--s-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 14 14"><polygon points="7,0.5 8.8,5 13.5,5.5 10,8.8 11,13.5 7,11 3,13.5 4,8.8 0.5,5.5 5.2,5" fill="var(--s)"/></svg></div>
-            <div><p style="font-size:13px;font-weight:500;color:var(--s-acc);">Sleep</p><p style="font-size:11px;color:var(--muted);">Track quality, get AI sleep coaching</p></div>
-          </div>
+        <div class="ob-meds-logo">MEDS</div>
+        <h1 class="onboard-heading" style="font-size:26px;">Your daily wellness,<br><em>simplified.</em></h1>
+        <p class="ob-welcome-tagline">Four pillars. One daily score. A calmer, stronger, healthier you — built one day at a time.</p>
+        <div class="ob-pillar-row">
+          <div class="ob-pillar-ico" style="background:var(--m-bg);"><svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="5" r="3" stroke="var(--m-acc)" stroke-width="1.3"/><path d="M2 12c0-2.76 2.24-5 5-5s5 2.24 5 5" stroke="var(--m-acc)" stroke-width="1.3" stroke-linecap="round"/></svg></div>
+          <div><p style="font-size:13px;font-weight:500;color:var(--m-acc);margin-bottom:1px;">Meditation</p><p style="font-size:11px;color:var(--muted);">Guided sessions, breathing & focus</p></div>
+        </div>
+        <div class="ob-pillar-row">
+          <div class="ob-pillar-ico" style="background:var(--e-bg);"><svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M2 10l3-6 2 4 2-2 3 4" stroke="var(--e-acc)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><p style="font-size:13px;font-weight:500;color:var(--e-acc);margin-bottom:1px;">Exercise</p><p style="font-size:11px;color:var(--muted);">AI workout plans with tracking</p></div>
+        </div>
+        <div class="ob-pillar-row">
+          <div class="ob-pillar-ico" style="background:var(--d-bg);"><svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M7 2c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5" stroke="var(--d-acc)" stroke-width="1.3" stroke-linecap="round"/><path d="M10 2l2 2-2 2" stroke="var(--d-acc)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div><p style="font-size:13px;font-weight:500;color:var(--d-acc);margin-bottom:1px;">Diet</p><p style="font-size:11px;color:var(--muted);">Meal plans, photo logging & cuisines</p></div>
+        </div>
+        <div class="ob-pillar-row">
+          <div class="ob-pillar-ico" style="background:var(--s-bg);"><svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M9 2a5 5 0 1 1-7 7 5 5 0 0 1 7-7z" stroke="var(--s-acc)" stroke-width="1.3"/></svg></div>
+          <div><p style="font-size:13px;font-weight:500;color:var(--s-acc);margin-bottom:1px;">Sleep</p><p style="font-size:11px;color:var(--muted);">Quality tracking & bedtime coaching</p></div>
         </div>
       </div>
     </div>
 
-    <!-- Slide 2: Your name -->
+    <!-- Slide 1: Name & Goal -->
     <div class="onboard-slide" id="slide-1">
       <p class="onboard-eyebrow">Step 1 of 3</p>
-      <h1 class="onboard-heading">What should we <em>call you?</em></h1>
-      <p class="onboard-sub">We'll personalize your coaching and daily check-ins.</p>
+      <h1 class="onboard-heading">Let's make this<br><em>yours.</em></h1>
+      <p class="onboard-sub">Tell us a little about yourself so we can personalise your experience.</p>
       <div class="onboard-fields">
         <div class="ob-field">
-          <label>Your name</label>
-          <input type="text" id="ob-name" placeholder="e.g. Marcus" autocomplete="given-name" autocorrect="off">
+          <label>Your first name</label>
+          <input type="text" id="ob-name" placeholder="e.g. Terry" autocomplete="given-name" autocorrect="off" autocapitalize="words">
         </div>
         <div class="ob-field">
-          <label>Age (optional)</label>
-          <input type="number" id="ob-age" placeholder="e.g. 34" min="13" max="100">
-        </div>
-        <div class="ob-field" style="margin-top:6px;">
-          <label>Primary health goal</label>
-          <div class="goal-chip-row" id="goal-chips">
-            <div class="goal-chip" onclick="selGoal(this,'Build strength')">Build strength</div>
-            <div class="goal-chip" onclick="selGoal(this,'Lose weight')">Lose weight</div>
-            <div class="goal-chip" onclick="selGoal(this,'Improve mental clarity')">Mental clarity</div>
-            <div class="goal-chip" onclick="selGoal(this,'Reduce stress')">Reduce stress</div>
-            <div class="goal-chip" onclick="selGoal(this,'Better sleep')">Better sleep</div>
-            <div class="goal-chip" onclick="selGoal(this,'Overall wellness')">Overall wellness</div>
-            <div class="goal-chip" onclick="selGoal(this,'Build endurance')">Build endurance</div>
-            <div class="goal-chip" onclick="selGoal(this,'Eat healthier')">Eat healthier</div>
+          <label>Primary goal</label>
+          <div class="goal-grid">
+            <div class="goal-card" onclick="selGoal(this,'Build strength')">
+              <div class="goal-card-icon">💪</div>
+              <div class="goal-card-name">Build strength</div>
+              <div class="goal-card-desc">Muscle, power & performance</div>
+            </div>
+            <div class="goal-card" onclick="selGoal(this,'Lose weight')">
+              <div class="goal-card-icon">⚡</div>
+              <div class="goal-card-name">Lose weight</div>
+              <div class="goal-card-desc">Fat loss & body composition</div>
+            </div>
+            <div class="goal-card" onclick="selGoal(this,'Reduce stress')">
+              <div class="goal-card-icon">🧘</div>
+              <div class="goal-card-name">Reduce stress</div>
+              <div class="goal-card-desc">Calm, focus & mental clarity</div>
+            </div>
+            <div class="goal-card" onclick="selGoal(this,'Better sleep')">
+              <div class="goal-card-icon">🌙</div>
+              <div class="goal-card-name">Better sleep</div>
+              <div class="goal-card-desc">Rest, recovery & energy</div>
+            </div>
+            <div class="goal-card" onclick="selGoal(this,'Build endurance')">
+              <div class="goal-card-icon">🏃</div>
+              <div class="goal-card-name">Build endurance</div>
+              <div class="goal-card-desc">Cardio & stamina</div>
+            </div>
+            <div class="goal-card" onclick="selGoal(this,'Overall wellness')">
+              <div class="goal-card-icon">🌿</div>
+              <div class="goal-card-name">Overall wellness</div>
+              <div class="goal-card-desc">Balance across all pillars</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Slide 3: Pillar weights -->
+    <!-- Slide 2: Focus pillar -->
     <div class="onboard-slide" id="slide-2">
       <p class="onboard-eyebrow">Step 2 of 3</p>
-      <h1 class="onboard-heading">What matters <em>most</em> to you?</h1>
-      <p class="onboard-sub">Tap a pillar to prioritize it. Your MEDS score will weight it higher.</p>
+      <h1 class="onboard-heading">What's your<br>biggest <em>focus?</em></h1>
+      <p class="onboard-sub">Your MEDS score will weight this pillar higher. You can change this anytime.</p>
       <div class="onboard-fields">
-        <div class="weight-row">
-          <div class="weight-card" id="wcard-m" onclick="cycleWeight('m')">
-            <div class="weight-card-name" style="color:var(--m-acc);">Meditation</div>
-            <div class="weight-card-val wm" id="wval-m">1×</div>
+        <div class="focus-grid">
+          <div class="focus-card" id="fcard-m" onclick="selFocus('m',this)">
+            <div class="focus-card-icon">🧘</div>
+            <div class="focus-card-name">Meditation</div>
           </div>
-          <div class="weight-card" id="wcard-e" onclick="cycleWeight('e')">
-            <div class="weight-card-name" style="color:var(--e-acc);">Exercise</div>
-            <div class="weight-card-val we" id="wval-e">1×</div>
+          <div class="focus-card" id="fcard-e" onclick="selFocus('e',this)">
+            <div class="focus-card-icon">💪</div>
+            <div class="focus-card-name">Exercise</div>
           </div>
-          <div class="weight-card" id="wcard-d" onclick="cycleWeight('d')">
-            <div class="weight-card-name" style="color:var(--d-acc);">Diet</div>
-            <div class="weight-card-val wd" id="wval-d">1×</div>
+          <div class="focus-card" id="fcard-d" onclick="selFocus('d',this)">
+            <div class="focus-card-icon">🥗</div>
+            <div class="focus-card-name">Diet</div>
           </div>
-          <div class="weight-card" id="wcard-s" onclick="cycleWeight('s')">
-            <div class="weight-card-name" style="color:var(--s-acc);">Sleep</div>
-            <div class="weight-card-val ws" id="wval-s">1×</div>
+          <div class="focus-card" id="fcard-s" onclick="selFocus('s',this)">
+            <div class="focus-card-icon">😴</div>
+            <div class="focus-card-name">Sleep</div>
           </div>
         </div>
-        <p class="weight-note">Tap to cycle: 1× → 1.5× → 2× priority</p>
-        <div class="ai-card" style="margin-top:16px;">
-          <p class="ai-tag">How this works</p>
-          <p class="ai-text">A pillar set to 2× contributes twice as much to your daily MEDS score. Set your biggest focus area higher — the AI will coach you accordingly.</p>
+        <div style="margin-top:14px;padding:12px 14px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border);">
+          <p style="font-size:12px;color:var(--muted);line-height:1.6;" id="focus-desc">Tap a pillar to make it your primary focus. That pillar will count for 2× in your daily MEDS score.</p>
         </div>
+        <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;">Not sure? Skip — all pillars are weighted equally by default.</p>
       </div>
     </div>
 
-    <!-- Slide 4: Targets -->
+    <!-- Slide 3: Daily targets -->
     <div class="onboard-slide" id="slide-3">
       <p class="onboard-eyebrow">Step 3 of 3</p>
       <h1 class="onboard-heading">Set your daily <em>targets.</em></h1>
-      <p class="onboard-sub">These are the baselines that define a complete day for you.</p>
+      <p class="onboard-sub">These define what a complete day looks like for you. Start realistic — you can adjust anytime.</p>
       <div class="onboard-fields">
-        <div class="ob-field">
-          <label>Meditation target (minutes)</label>
-          <input type="number" id="ob-tgt-m" placeholder="10" min="1" max="120" value="10">
-        </div>
-        <div class="ob-field">
-          <label>Exercise target (minutes)</label>
-          <input type="number" id="ob-tgt-e" placeholder="30" min="5" max="300" value="30">
-        </div>
-        <div class="ob-field">
-          <label>Meals per day target</label>
-          <input type="number" id="ob-tgt-d" placeholder="3" min="1" max="6" value="3">
-        </div>
-        <div class="ob-field">
-          <label>Sleep target (hours)</label>
-          <input type="number" id="ob-tgt-s" placeholder="7" min="4" max="12" value="7">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 14px;">
+          <div class="target-row">
+            <div class="target-left">
+              <div class="target-dot" style="background:var(--m-acc);"></div>
+              <div>
+                <div class="target-label">Meditation</div>
+                <div class="target-hint">minutes per day</div>
+              </div>
+            </div>
+            <div class="target-chips" id="tgt-chips-m">
+              <div class="target-chip" onclick="selTargetChip('m',5,this)">5</div>
+              <div class="target-chip sel" onclick="selTargetChip('m',10,this)">10</div>
+              <div class="target-chip" onclick="selTargetChip('m',20,this)">20</div>
+              <div class="target-chip" onclick="selTargetChip('m',30,this)">30</div>
+            </div>
+          </div>
+          <div class="target-row">
+            <div class="target-left">
+              <div class="target-dot" style="background:var(--e);"></div>
+              <div>
+                <div class="target-label">Exercise</div>
+                <div class="target-hint">minutes per day</div>
+              </div>
+            </div>
+            <div class="target-chips" id="tgt-chips-e">
+              <div class="target-chip" onclick="selTargetChip('e',20,this)">20</div>
+              <div class="target-chip sel" onclick="selTargetChip('e',30,this)">30</div>
+              <div class="target-chip" onclick="selTargetChip('e',45,this)">45</div>
+              <div class="target-chip" onclick="selTargetChip('e',60,this)">60</div>
+            </div>
+          </div>
+          <div class="target-row">
+            <div class="target-left">
+              <div class="target-dot" style="background:var(--d);"></div>
+              <div>
+                <div class="target-label">Diet</div>
+                <div class="target-hint">meals per day</div>
+              </div>
+            </div>
+            <div class="target-chips" id="tgt-chips-d">
+              <div class="target-chip" onclick="selTargetChip('d',2,this)">2</div>
+              <div class="target-chip sel" onclick="selTargetChip('d',3,this)">3</div>
+              <div class="target-chip" onclick="selTargetChip('d',4,this)">4</div>
+              <div class="target-chip" onclick="selTargetChip('d',5,this)">5</div>
+            </div>
+          </div>
+          <div class="target-row">
+            <div class="target-left">
+              <div class="target-dot" style="background:var(--s-acc);"></div>
+              <div>
+                <div class="target-label">Sleep</div>
+                <div class="target-hint">hours per night</div>
+              </div>
+            </div>
+            <div class="target-chips" id="tgt-chips-s">
+              <div class="target-chip" onclick="selTargetChip('s',6,this)">6</div>
+              <div class="target-chip sel" onclick="selTargetChip('s',7,this)">7</div>
+              <div class="target-chip" onclick="selTargetChip('s',8,this)">8</div>
+              <div class="target-chip" onclick="selTargetChip('s',9,this)">9</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -530,7 +612,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
       <div class="odot" id="odot-2"></div>
       <div class="odot" id="odot-3"></div>
     </div>
-    <button class="btn-primary" id="ob-next-btn" onclick="obNext()">Get started</button>
+    <button class="btn-primary" id="ob-next-btn" onclick="obNext()">Get started →</button>
     <button class="btn-ghost" id="ob-back-btn" style="display:none;" onclick="obBack()">Back</button>
   </div>
 </div>
@@ -1400,67 +1482,114 @@ let S=loadState()||{checked:{m:false,e:false,d:false,s:false},logs:{m:0,e:0,d:0,
 function getTgt(k){const p=S.profile;if(!p)return{m:10,e:30,d:3,s:7}[k];return p.targets?p.targets[k]:{m:10,e:30,d:3,s:7}[k];}
 function getWeight(k){const p=S.profile;if(!p||!p.weights)return 1;return p.weights[k]||1;}
 
-// ONBOARDING STATE
-let obSlide=0;
-let obWeights={m:1,e:1,d:1,s:1};
+// Onboarding state
 let obGoal='';
+let obFocus='';  // single focus pillar (replaces obWeights)
+let obTargets={m:10,e:30,d:3,s:7};
+let obSlide=0;
 
 function selGoal(el,val){
   obGoal=val;
-  document.querySelectorAll('.goal-chip').forEach(c=>c.classList.remove('sel'));
+  document.querySelectorAll('.goal-card').forEach(c=>c.classList.remove('sel'));
   el.classList.add('sel');
 }
 
-function cycleWeight(k){
-  const steps=[1,1.5,2];
-  const cur=obWeights[k];
-  const idx=steps.indexOf(cur);
-  obWeights[k]=steps[(idx+1)%steps.length];
-  document.getElementById('wval-'+k).textContent=obWeights[k]+'×';
-  document.getElementById('wcard-'+k).className='weight-card active-'+k;
+const FOCUS_DESCS={
+  m:'Meditation will count 2× in your daily MEDS score. Ideal if stress, focus, or mental clarity is your priority.',
+  e:'Exercise will count 2× in your daily MEDS score. Ideal if strength, fitness, or body composition is your priority.',
+  d:'Diet will count 2× in your daily MEDS score. Ideal if nutrition, weight, or healthy eating is your priority.',
+  s:'Sleep will count 2× in your daily MEDS score. Ideal if rest, recovery, or energy is your priority.'
+};
+
+function selFocus(k,el){
+  obFocus=k;
+  ['m','e','d','s'].forEach(p=>{
+    const c=document.getElementById('fcard-'+p);
+    if(c)c.className='focus-card';
+  });
+  el.className='focus-card sel-'+k;
+  const desc=document.getElementById('focus-desc');
+  if(desc)desc.textContent=FOCUS_DESCS[k]||'';
+}
+
+function selTargetChip(pillar,val,el){
+  obTargets[pillar]=val;
+  const row=document.getElementById('tgt-chips-'+pillar);
+  if(row)row.querySelectorAll('.target-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function selTargetChipByVal(pillar,val){
+  const row=document.getElementById('tgt-chips-'+pillar);
+  if(!row)return;
+  row.querySelectorAll('.target-chip').forEach(c=>{
+    c.classList.toggle('sel',parseInt(c.textContent)===val);
+  });
 }
 
 function obNext(){
   if(obSlide===0){
     goSlide(1);
-    document.getElementById('ob-next-btn').textContent='Continue';
+    document.getElementById('ob-next-btn').textContent='Continue →';
     document.getElementById('ob-back-btn').style.display='block';
     return;
   }
   if(obSlide===1){
     const name=document.getElementById('ob-name').value.trim();
-    if(!name){document.getElementById('ob-name').focus();document.getElementById('ob-name').style.borderColor='#e85a4a';return;}
+    if(!name){
+      const inp=document.getElementById('ob-name');
+      inp.focus();inp.style.borderColor='#e85a4a';
+      inp.placeholder='Please enter your name';
+      setTimeout(()=>{inp.style.borderColor='';inp.placeholder='e.g. Terry';},2000);
+      return;
+    }
     document.getElementById('ob-name').style.borderColor='';
     goSlide(2);return;
   }
-  if(obSlide===2){goSlide(3);document.getElementById('ob-next-btn').textContent='Start my MEDS';return;}
+  if(obSlide===2){
+    goSlide(3);
+    document.getElementById('ob-next-btn').textContent='Start my MEDS →';
+    return;
+  }
   if(obSlide===3){finishOnboarding();return;}
 }
 
 function obBack(){
-  if(obSlide>0)goSlide(obSlide-1);
-  if(obSlide===0){document.getElementById('ob-back-btn').style.display='none';document.getElementById('ob-next-btn').textContent='Get started';}
+  if(obSlide>0){
+    goSlide(obSlide-1);
+    if(obSlide===0){
+      document.getElementById('ob-back-btn').style.display='none';
+      document.getElementById('ob-next-btn').textContent='Get started →';
+    }
+    if(obSlide===2)document.getElementById('ob-next-btn').textContent='Continue →';
+  }
 }
 
 function goSlide(n){
-  document.getElementById('slide-'+obSlide).classList.remove('active');
-  document.getElementById('slide-'+obSlide).classList.add('exit');
-  setTimeout(()=>{const old=document.getElementById('slide-'+obSlide);old.classList.remove('exit');},350);
+  const cur=document.getElementById('slide-'+obSlide);
+  cur.classList.remove('active');
+  cur.classList.add('exit');
+  setTimeout(()=>cur.classList.remove('exit'),380);
   obSlide=n;
-  document.getElementById('slide-'+n).classList.add('active');
-  document.querySelectorAll('.odot').forEach((d,i)=>{d.classList.toggle('active',i===n);});
-  if(n===0){document.getElementById('ob-back-btn').style.display='none';document.getElementById('ob-next-btn').textContent='Get started';}
-  if(n===3)document.getElementById('ob-next-btn').textContent='Start my MEDS';
+  const next=document.getElementById('slide-'+n);
+  next.classList.add('active');
+  document.querySelectorAll('.odot').forEach((d,i)=>d.classList.toggle('active',i===n));
+  if(n===0){document.getElementById('ob-back-btn').style.display='none';document.getElementById('ob-next-btn').textContent='Get started →';}
+  if(n===3)document.getElementById('ob-next-btn').textContent='Start my MEDS →';
 }
 
 function finishOnboarding(){
   const name=document.getElementById('ob-name').value.trim()||'Friend';
-  const age=document.getElementById('ob-age').value||'';
-  const tgtM=parseInt(document.getElementById('ob-tgt-m').value)||10;
-  const tgtE=parseInt(document.getElementById('ob-tgt-e').value)||30;
-  const tgtD=parseInt(document.getElementById('ob-tgt-d').value)||3;
-  const tgtS=parseInt(document.getElementById('ob-tgt-s').value)||7;
-  S.profile={name,age,goal:obGoal,weights:{...obWeights},targets:{m:tgtM,e:tgtE,d:tgtD,s:tgtS},onboarded:true};
+  // Convert focus pillar to weights
+  const weights={m:1,e:1,d:1,s:1};
+  if(obFocus&&weights[obFocus]!==undefined)weights[obFocus]=2;
+  S.profile={
+    name,age:'',
+    goal:obGoal||'Overall wellness',
+    weights,
+    targets:{...obTargets},
+    onboarded:true
+  };
   saveStateLS(S);
   document.getElementById('onboard').style.display='none';
   document.getElementById('main-app').style.display='flex';
@@ -1470,20 +1599,45 @@ function finishOnboarding(){
 
 function reopenOnboarding(){
   const p=S.profile||{};
-  obWeights={...(p.weights||{m:1,e:1,d:1,s:1})};
   obGoal=p.goal||'';
+  obTargets={
+    m:(p.targets&&p.targets.m)||10,
+    e:(p.targets&&p.targets.e)||30,
+    d:(p.targets&&p.targets.d)||3,
+    s:(p.targets&&p.targets.s)||7
+  };
+  // Detect focus from weights
+  const w=p.weights||{m:1,e:1,d:1,s:1};
+  obFocus=Object.entries(w).find(([k,v])=>v>=2)?.[0]||'';
   obSlide=0;
-  document.getElementById('ob-name').value=p.name||'';
-  document.getElementById('ob-age').value=p.age||'';
-  document.getElementById('ob-tgt-m').value=(p.targets&&p.targets.m)||10;
-  document.getElementById('ob-tgt-e').value=(p.targets&&p.targets.e)||30;
-  document.getElementById('ob-tgt-d').value=(p.targets&&p.targets.d)||3;
-  document.getElementById('ob-tgt-s').value=(p.targets&&p.targets.s)||7;
-  ['m','e','d','s'].forEach(k=>{document.getElementById('wval-'+k).textContent=obWeights[k]+'×';if(obWeights[k]>1)document.getElementById('wcard-'+k).className='weight-card active-'+k;else document.getElementById('wcard-'+k).className='weight-card';});
-  if(obGoal)document.querySelectorAll('.goal-chip').forEach(c=>{if(c.textContent.trim()===obGoal||c.getAttribute('onclick').includes(obGoal))c.classList.add('sel');});
+  // Restore name
+  const nameEl=document.getElementById('ob-name');
+  if(nameEl)nameEl.value=p.name||'';
+  // Restore goal cards
+  if(obGoal){
+    document.querySelectorAll('.goal-card').forEach(c=>{
+      const nameEl=c.querySelector('.goal-card-name');
+      if(nameEl&&nameEl.textContent.trim()===obGoal)c.classList.add('sel');
+      else c.classList.remove('sel');
+    });
+  }
+  // Restore focus
+  ['m','e','d','s'].forEach(k=>{
+    const fc=document.getElementById('fcard-'+k);
+    if(fc)fc.className='focus-card'+(obFocus===k?' sel-'+k:'');
+  });
+  if(obFocus){
+    const desc=document.getElementById('focus-desc');
+    if(desc)desc.textContent=FOCUS_DESCS[obFocus]||'';
+  }
+  // Restore target chips
+  ['m','e','d','s'].forEach(k=>selTargetChipByVal(k,obTargets[k]));
+  // Reset slides
   document.querySelectorAll('.odot').forEach((d,i)=>d.classList.toggle('active',i===0));
-  document.querySelectorAll('.onboard-slide').forEach((s,i)=>{s.classList.toggle('active',i===0);s.classList.remove('exit');});
-  document.getElementById('ob-next-btn').textContent='Get started';
+  document.querySelectorAll('.onboard-slide').forEach((s,i)=>{
+    s.classList.toggle('active',i===0);s.classList.remove('exit');
+  });
+  document.getElementById('ob-next-btn').textContent='Get started →';
   document.getElementById('ob-back-btn').style.display='none';
   document.getElementById('onboard').style.display='flex';
   document.getElementById('main-app').style.display='none';
