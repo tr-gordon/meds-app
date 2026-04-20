@@ -1065,6 +1065,17 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
           </div>
           <div class="routine-block" id="ex-today-plan-list"></div>
           <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Log your sets, reps, and weight — tap the circle to mark complete</p>
+          <p class="field-lbl" style="margin-top:14px;">Today's intensity</p>
+          <div class="chip-row" id="today-intensity-chips">
+            <div class="chip" onclick="selChip(this,'today-intensity','Easy')">🟢 Easy</div>
+            <div class="chip" onclick="selChip(this,'today-intensity','Moderate')">🟡 Moderate</div>
+            <div class="chip" onclick="selChip(this,'today-intensity','Hard')">🔴 Hard</div>
+            <div class="chip" onclick="selChip(this,'today-intensity','Mixed')">🔀 Mixed</div>
+          </div>
+          <button onclick="regenerateTodayWorkout()" style="width:100%;margin-top:10px;padding:10px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 6.5a4.5 4.5 0 1 1 .9 2.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M2 9.5V6.5h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Regenerate with this intensity
+          </button>
         </div>
         <div id="ex-today-rest" style="display:none;">
           <div class="ai-card">
@@ -1105,6 +1116,14 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
           <div class="chip" onclick="toggleMultiChip(this,'wk-style','Yoga')">Yoga</div>
           <div class="chip" onclick="toggleMultiChip(this,'wk-style','Sports')">Sports</div>
         </div>
+        <p class="field-lbl">Intensity</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'wk-intensity','Easy');updateIntensityDesc('Easy')">🟢 Easy</div>
+          <div class="chip" onclick="selChip(this,'wk-intensity','Moderate');updateIntensityDesc('Moderate')">🟡 Moderate</div>
+          <div class="chip" onclick="selChip(this,'wk-intensity','Hard');updateIntensityDesc('Hard')">🔴 Hard</div>
+          <div class="chip" onclick="selChip(this,'wk-intensity','Mixed');updateIntensityDesc('Mixed')">🔀 Mixed</div>
+        </div>
+        <p style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5;" id="intensity-desc">Select an intensity level — this adjusts sets, reps, and exercise selection.</p>
         <p class="field-lbl">Workout days <span style="color:var(--e);font-size:10px;letter-spacing:.03em;text-transform:none;">tap to toggle</span></p>
         <div class="day-selector" id="wk-day-selector">
           <div class="day-btn sel" data-day="Mon" onclick="toggleWorkoutDay(this)">Mon</div>
@@ -1132,7 +1151,7 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
           <div class="chip" onclick="toggleMultiChip(this,'wk-goal','Stress relief')">Stress relief</div>
         </div>
         <button class="btn-primary" style="margin-top:14px;" onclick="generateWeeklyWorkout()">Generate weekly plan</button>
-        <div id="weekly-workout-result" style="display:none;margin-top:12px;" id="weekly-workout-list"></div>
+        <div id="weekly-workout-result" style="display:none;margin-top:12px;"></div>
         <div class="food-loading" id="wk-workout-loading" style="display:none;">
           <div class="spinner" style="border-top-color:var(--e);"></div>
           <p style="color:var(--e);">Building your week...</p>
@@ -2561,7 +2580,14 @@ function loadTodayExercise(){
     saveBtn.style.display='none';
   }else{
     restEl.style.display='none';fromPlan.style.display='block';
-    document.getElementById('ex-today-focus-lbl').textContent=todayEntry.day+' — '+todayEntry.focus;
+    document.getElementById('ex-today-focus-lbl').textContent=todayEntry.day+' — '+todayEntry.focus+(todayEntry.intensity?' · '+todayEntry.intensity:'');
+    // Pre-select intensity chip to match plan
+    const planIntensity=todayEntry.intensity||S.weeklyWorkoutPlan.intensity||'Moderate';
+    chips['today-intensity']=planIntensity;
+    document.querySelectorAll('#today-intensity-chips .chip').forEach(c=>{
+      const label=c.textContent.replace(/[🟢🟡🔴🔀]\s*/,'').trim();
+      c.classList.toggle('sel',label===planIntensity);
+    });
     const list=document.getElementById('ex-today-plan-list');
     list.innerHTML='';
     let completedCount=0;
@@ -2884,13 +2910,50 @@ const WK_WORKOUTS={
 
 const REST_DAYS=['Rest & recovery — light walk or stretch only','Active recovery — 20 min easy walk','Rest day — foam roll & mobility work'];
 
-function buildWeeklyWorkoutPlan(styles,goals,selectedDays,dur){
+// Intensity multipliers affect sets/reps on strength exercises
+const INTENSITY_PROFILES={
+  Easy:{   setsScale:0.75, repsScale:0.85, exCount:4, note:'Lower volume, focus on form'},
+  Moderate:{setsScale:1,   repsScale:1,    exCount:5, note:'Balanced volume and intensity'},
+  Hard:{   setsScale:1.25, repsScale:1.15, exCount:6, note:'High volume, push yourself'},
+  Mixed:{  setsScale:1,   repsScale:1,    exCount:5, note:'Varies each session'}
+};
+
+function applyIntensity(exercises, intensity, sessionIdx){
+  const profile=INTENSITY_PROFILES[intensity]||INTENSITY_PROFILES.Moderate;
+  // For Mixed, alternate easy/hard
+  let scale=1;
+  if(intensity==='Mixed'){
+    scale=sessionIdx%2===0?0.8:1.2;
+  } else {
+    scale=profile.setsScale;
+  }
+  return exercises.slice(0,profile.exCount).map(ex=>{
+    if(typeof ex!=='object'||!ex.sets)return ex;
+    const newEx={...ex};
+    if(ex.type==='strength'||ex.type==='bodyweight'){
+      newEx.sets=Math.max(1,Math.round((ex.sets||3)*scale));
+      if(ex.reps)newEx.reps=Math.max(1,Math.round((ex.reps||8)*(intensity==='Hard'?1.1:intensity==='Easy'?0.9:1)));
+    }else if(ex.type==='timed'||ex.type==='cardio'||ex.type==='run'){
+      // Adjust duration for cardio intensity
+      if(ex.duration){
+        const mins=parseInt(ex.duration)||10;
+        const scaled=intensity==='Hard'?Math.round(mins*1.25):intensity==='Easy'?Math.round(mins*0.75):mins;
+        newEx.duration=scaled+(ex.duration.includes('min')?' min':'s');
+      }
+    }
+    return newEx;
+  });
+}
+
+function buildWeeklyWorkoutPlan(styles,goals,selectedDays,dur,intensity){
   const styleList=(styles||'Strength').split(' + ').map(s=>s.trim()).filter(s=>WK_WORKOUTS[s]);
   if(!styleList.length)styleList.push('Strength');
+  const intens=intensity||'Moderate';
   const ALL_SHORT=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const FULL={Mon:'Monday',Tue:'Tuesday',Wed:'Wednesday',Thu:'Thursday',Fri:'Friday',Sat:'Saturday',Sun:'Sunday'};
   const activeSet=new Set(Array.isArray(selectedDays)&&selectedDays.length?selectedDays:['Mon','Wed','Fri']);
   let focusIdx=0;
+  let sessionIdx=0;
   return{days:ALL_SHORT.map(short=>{
     const name=FULL[short];
     if(!activeSet.has(short))return{day:name,focus:'Rest',exercises:[REST_DAYS[focusIdx%REST_DAYS.length]],rest:true};
@@ -2898,10 +2961,11 @@ function buildWeeklyWorkoutPlan(styles,goals,selectedDays,dur){
     const lib=WK_WORKOUTS[style]||WK_WORKOUTS.Strength;
     const focusKeys=Object.keys(lib);
     const focus=focusKeys[focusIdx%focusKeys.length];
-    const exercises=(lib[focus]||[]).slice(0,6);
-    focusIdx++;
-    return{day:name,focus,exercises,rest:false};
-  })};
+    const rawExercises=(lib[focus]||[]);
+    const exercises=applyIntensity(rawExercises,intens,sessionIdx);
+    focusIdx++;sessionIdx++;
+    return{day:name,focus,exercises,rest:false,intensity:intens};
+  }),intensity:intens};
 }
 
 
@@ -3329,11 +3393,24 @@ function buildGroceryFromPlan(plan){
   return{categories:Object.entries(categories).filter(([,v])=>v.length).map(([name,items])=>({name,items}))};
 }
 
+const INTENSITY_DESCS={
+  Easy:'Lower volume — fewer sets, lighter reps. Great for beginners or recovery weeks.',
+  Moderate:'Balanced volume and effort. The sweet spot for consistent progress.',
+  Hard:'High volume and challenging reps. Push your limits and build serious strength.',
+  Mixed:'Alternates easy and hard sessions across the week for optimal recovery.'
+};
+
+function updateIntensityDesc(intensity){
+  const el=document.getElementById('intensity-desc');
+  if(el)el.textContent=INTENSITY_DESCS[intensity]||'';
+}
+
 function generateWeeklyWorkout(){
   const style=getMulti('wk-style','Strength');
   const selectedDays=getSelectedWorkoutDays();
   const dur=chips['wk-dur']||'45';
   const goal=getMulti('wk-goal','General fitness');
+  const intensity=chips['wk-intensity']||'Moderate';
   if(!selectedDays.length){
     alert('Please select at least one workout day.');return;
   }
@@ -3341,7 +3418,7 @@ function generateWeeklyWorkout(){
   document.getElementById('weekly-workout-result').style.display='none';
   setTimeout(()=>{
     try{
-      const plan=buildWeeklyWorkoutPlan(style,goal,selectedDays,dur);
+      const plan=buildWeeklyWorkoutPlan(style,goal,selectedDays,dur,intensity);
       S.weeklyWorkoutPlan=plan;saveStateLS(S);
       renderWeeklyWorkout(plan);
     }catch(e){
@@ -3349,6 +3426,69 @@ function generateWeeklyWorkout(){
       document.getElementById('weekly-workout-result').style.display='block';
     }finally{document.getElementById('wk-workout-loading').style.display='none';}
   },300);
+}
+
+function regenerateTodayWorkout(){
+  if(!S.weeklyWorkoutPlan)return;
+  const SHORT_DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const FULL_TO_SHORT={Sunday:'Sun',Monday:'Mon',Tuesday:'Tue',Wednesday:'Wed',Thursday:'Thu',Friday:'Fri',Saturday:'Sat'};
+  const todayShort=SHORT_DAYS[new Date().getDay()];
+  const dayIdx=(S.weeklyWorkoutPlan.days||[]).findIndex(d=>FULL_TO_SHORT[d.day]===todayShort);
+  if(dayIdx<0)return;
+
+  const plan=S.weeklyWorkoutPlan;
+  const intensity=chips['today-intensity']||plan.intensity||'Moderate';
+  const style=getMulti('wk-style','Strength')||'Strength';
+  const styleList=style.split(' + ').map(s=>s.trim()).filter(s=>WK_WORKOUTS[s]);
+  if(!styleList.length)styleList.push('Strength');
+
+  // Pick a different focus from the current one
+  const currentFocus=plan.days[dayIdx].focus;
+  const lib=WK_WORKOUTS[styleList[0]]||WK_WORKOUTS.Strength;
+  const focusKeys=Object.keys(lib).filter(k=>k!==currentFocus);
+  const newFocus=focusKeys[Math.floor(Math.random()*focusKeys.length)]||focusKeys[0]||currentFocus;
+  const rawExercises=(lib[newFocus]||[]);
+  const sessionIdx=dayIdx;
+  const exercises=applyIntensity(rawExercises,intensity,sessionIdx);
+
+  // Update just today in the plan
+  S.weeklyWorkoutPlan.days[dayIdx]={
+    ...plan.days[dayIdx],
+    focus:newFocus,
+    exercises,
+    rest:false,
+    intensity
+  };
+  saveStateLS(S);
+
+  // Re-render today's list
+  const focusEl=document.getElementById('ex-today-focus-lbl');
+  if(focusEl)focusEl.textContent=S.weeklyWorkoutPlan.days[dayIdx].day+' — '+newFocus+' ('+intensity+')';
+  const list=document.getElementById('ex-today-plan-list');
+  if(list){
+    list.innerHTML='';
+    exercises.forEach((ex,ei)=>{
+      const row=makeExerciseRow(ex,'today-'+ei,()=>{
+        const done=list.querySelectorAll('.ex-done-chk.done').length;
+        if(done>0&&!S.checked.e){
+          S.checked.e=true;
+          S.logs.e=parseInt(chips['wk-dur']||'45')||45;
+          S.details.edur=chips['wk-dur']||'45';
+          S.details.wtype=newFocus;
+          if(Object.values(S.checked).every(Boolean))S.score=computeScore();
+          persistToday();renderAll();
+        }
+      });
+      list.appendChild(row);
+    });
+  }
+
+  // Show intensity badge
+  const intensityColors={Easy:'var(--e)',Moderate:'var(--d)',Hard:'#e85a4a',Mixed:'var(--s)'};
+  const toast=document.createElement('div');
+  toast.style.cssText='text-align:center;padding:8px;font-size:11px;color:'+intensityColors[intensity]+';font-style:italic;';
+  toast.textContent='New session: '+newFocus+' · '+intensity+' intensity';
+  list.insertBefore(toast,list.firstChild);
 }
 
 async function generateWeeklyMeal(){
