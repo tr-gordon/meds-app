@@ -933,6 +933,22 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
         </div>
       </div>
       <button class="reset-btn" onclick="resetApp()">Reset all data</button>
+
+      <!-- Health report export -->
+      <div class="profile-section" style="margin-top:14px;">
+        <p class="profile-section-title">Health report</p>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;">
+          <p style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;">Generate a structured wellness report covering sleep, exercise, diet, and meditation — formatted to share with your doctor or healthcare provider.</p>
+          <p class="field-lbl" style="margin-top:0;">Date range</p>
+          <div class="chip-row" style="margin-bottom:14px;">
+            <div class="chip sel" id="rpt-range-30" onclick="selReportRange(30,this)">Last 30 days</div>
+            <div class="chip" id="rpt-range-60" onclick="selReportRange(60,this)">Last 60 days</div>
+          </div>
+          <button class="btn-primary" onclick="exportHealthReport()">
+            Export health report →
+          </button>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -1703,6 +1719,283 @@ function renderProfile(){
   renderProfileApiKey();
   renderNotifSettings();
 }
+
+// ── HEALTH REPORT ────────────────────────────────────────────
+let reportRangeDays=30;
+
+function selReportRange(days,el){
+  reportRangeDays=days;
+  document.querySelectorAll('#rpt-range-30,#rpt-range-60').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function exportHealthReport(){
+  const days=reportRangeDays;
+  const p=S.profile||{};
+  const name=p.name||'Patient';
+  const today=new Date();
+  const startDate=new Date();startDate.setDate(today.getDate()-days+1);
+  const dateRange=startDate.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})+' — '+today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  // Collect history entries within range
+  const entries=S.history.filter(h=>{
+    const d=new Date(h.date+'T12:00:00');
+    return d>=startDate&&d<=today;
+  });
+  const total=entries.length;
+  if(total===0){alert('No data logged in this period yet.');return;}
+
+  // ── SLEEP STATS ──
+  const sleepEntries=entries.filter(e=>e.checked&&e.checked.s&&e.details);
+  const sleepHours=sleepEntries.map(e=>parseFloat(e.details.shrs||0)).filter(Boolean);
+  const avgSleep=sleepHours.length?+(sleepHours.reduce((a,b)=>a+b,0)/sleepHours.length).toFixed(1):null;
+  const qualMap={'Poor':1,'Fair':2,'Good':3,'Great':4};
+  const sleepQuals=sleepEntries.map(e=>qualMap[e.details.squal]||0).filter(Boolean);
+  const avgQual=sleepQuals.length?sleepQuals.reduce((a,b)=>a+b,0)/sleepQuals.length:null;
+  const qualLabel=avgQual?avgQual>=3.5?'Good to Great':avgQual>=2.5?'Fair to Good':'Poor to Fair':null;
+  const bedtimes=sleepEntries.map(e=>e.details.sbed).filter(Boolean);
+  const bedtimeFreq={};bedtimes.forEach(b=>{bedtimeFreq[b]=(bedtimeFreq[b]||0)+1;});
+  const commonBedtime=Object.entries(bedtimeFreq).sort((a,b)=>b[1]-a[1])[0]?.[0]||null;
+  const allFactors=sleepEntries.flatMap(e=>e.details.sfactors?(e.details.sfactors.split?e.details.sfactors.split(','):[e.details.sfactors]):[]).map(f=>f.trim()).filter(Boolean);
+  const factorFreq={};allFactors.forEach(f=>{factorFreq[f]=(factorFreq[f]||0)+1;});
+  const topFactors=Object.entries(factorFreq).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([f,n])=>f+' ('+n+'x)');
+  const sleepScores=sleepEntries.map(e=>e.details.sleepScore).filter(v=>v!=null);
+  const avgSleepScore=sleepScores.length?Math.round(sleepScores.reduce((a,b)=>a+b,0)/sleepScores.length):null;
+
+  // ── EXERCISE STATS ──
+  const exEntries=entries.filter(e=>e.checked&&e.checked.e);
+  const exDays=exEntries.length;
+  const restDays=exEntries.filter(e=>e.details&&e.details.eIsRest).length;
+  const activeDays=exDays-restDays;
+  const exPerWeek=days>0?+(exDays/(days/7)).toFixed(1):0;
+  const wtypes=exEntries.map(e=>e.details&&e.details.wtype).filter(Boolean).filter(t=>!['Full rest','Active recovery','Light walk','Stretching','Foam rolling'].includes(t));
+  const wtypeFreq={};wtypes.forEach(t=>{wtypeFreq[t]=(wtypeFreq[t]||0)+1;});
+  const topTypes=Object.entries(wtypeFreq).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([t])=>t);
+
+  // ── DIET STATS ──
+  const dietEntries=entries.filter(e=>e.checked&&e.checked.d);
+  const dietDays=dietEntries.length;
+  const mealCounts=dietEntries.map(e=>parseInt(e.details&&e.details.dmeals||0)).filter(Boolean);
+  const avgMeals=mealCounts.length?+(mealCounts.reduce((a,b)=>a+b,0)/mealCounts.length).toFixed(1):null;
+  const photoLogs=dietEntries.filter(e=>e.details&&e.details.photoLog&&e.details.photoLog.length);
+  const totalCalEntries=photoLogs.flatMap(e=>e.details.photoLog.map(m=>m.calories||0));
+  const avgCals=totalCalEntries.length?Math.round(totalCalEntries.reduce((a,b)=>a+b,0)/photoLogs.length):null;
+
+  // ── MEDITATION STATS ──
+  const medEntries=entries.filter(e=>e.checked&&e.checked.m);
+  const medDays=medEntries.length;
+  const medDurs=medEntries.map(e=>parseInt(e.details&&e.details.medDur||0)).filter(Boolean);
+  const avgMed=medDurs.length?Math.round(medDurs.reduce((a,b)=>a+b,0)/medDurs.length):null;
+  const medTypes=medEntries.map(e=>e.details&&e.details.medType).filter(Boolean);
+  const medTypeFreq={};medTypes.forEach(t=>{medTypeFreq[t]=(medTypeFreq[t]||0)+1;});
+  const topMedTypes=Object.entries(medTypeFreq).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([t])=>t);
+
+  // ── MEDS SCORES ──
+  const scored=entries.filter(e=>e.score!=null);
+  const avgScore=scored.length?+(scored.reduce((a,e)=>a+e.score,0)/scored.length).toFixed(1):null;
+  const scoresByWeek=[];
+  for(let w=0;w<Math.ceil(days/7);w++){
+    const ws=new Date(startDate);ws.setDate(ws.getDate()+w*7);
+    const we=new Date(ws);we.setDate(we.getDate()+6);
+    const wEntries=scored.filter(e=>{const d=new Date(e.date+'T12:00:00');return d>=ws&&d<=we;});
+    if(wEntries.length)scoresByWeek.push({week:'Wk '+(w+1),avg:+(wEntries.reduce((a,e)=>a+e.score,0)/wEntries.length).toFixed(1),n:wEntries.length});
+  }
+
+  // ── CONSISTENCY ──
+  const consistency=Math.round((total/days)*100);
+  const fullMedsDays=entries.filter(e=>e.checked&&Object.values(e.checked).every(Boolean)).length;
+
+  // ── OBSERVATIONS ──
+  const obs=[];
+  if(avgSleep){
+    if(avgSleep<6)obs.push('Average sleep duration ('+avgSleep+' hrs) is below the recommended 7–9 hours for adults.');
+    else if(avgSleep>=7)obs.push('Sleep duration is within the recommended range (avg '+avgSleep+' hrs/night).');
+  }
+  if(topFactors.length)obs.push('Most frequently reported sleep factors: '+topFactors.join(', ')+'.');
+  if(exPerWeek>0){
+    if(exPerWeek>=3)obs.push('Exercise frequency ('+exPerWeek+'x/week avg) meets general physical activity guidelines.');
+    else obs.push('Exercise frequency ('+exPerWeek+'x/week avg) is below the recommended 3–5 sessions per week.');
+  }
+  if(restDays>0)obs.push(restDays+' planned rest/recovery day'+(restDays>1?'s':'')+' logged in the period.');
+  if(medDays>0)obs.push('Meditation practiced on '+medDays+' of '+total+' logged days'+(avgMed?' (avg '+avgMed+' min/session)':'')+'.');
+  if(avgScore)obs.push('Average daily MEDS wellness score: '+avgScore+'/10 across '+scored.length+' complete days.');
+
+  // ── SCORE CHART BARS ──
+  const maxScore=10;
+  const chartBars=scoresByWeek.map(w=>{
+    const pct=Math.round((w.avg/maxScore)*100);
+    const color=w.avg>=8?'#3ecf8e':w.avg>=5?'#e8a44a':'#e85a4a';
+    return`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
+      <div style="font-size:10px;color:#666;">${w.avg}</div>
+      <div style="height:${Math.round(pct*0.8)}px;background:${color};border-radius:3px 3px 0 0;width:100%;min-height:4px;"></div>
+      <div style="font-size:9px;color:#999;">${w.week}</div>
+    </div>`;
+  }).join('');
+
+  // ── 30-DAY PILLAR HEATMAP ──
+  const recentDays=[];
+  for(let i=days-1;i>=0;i--){
+    const d=new Date();d.setDate(d.getDate()-i);
+    const ds=localDateStr(d);
+    const e=entries.find(h=>h.date===ds);
+    recentDays.push({date:ds,e});
+  }
+  const heatmapRows=['m','e','d','s'].map(k=>{
+    const pillarColors={m:'#a8a49e',e:'#3ecf8e',d:'#e8a44a',s:'#9b8fe8'};
+    const names={m:'Meditation',e:'Exercise',d:'Diet',s:'Sleep'};
+    const cells=recentDays.map(({date,e})=>{
+      const done=e&&e.checked&&e.checked[k];
+      return`<div style="width:${days<=30?'28px':'14px'};height:${days<=30?'14px':'10px'};border-radius:2px;background:${done?pillarColors[k]:'#eee'};flex-shrink:0;" title="${date}"></div>`;
+    }).join('');
+    return`<div style="display:flex;align-items:center;gap:4px;margin-bottom:5px;">
+      <div style="width:70px;font-size:10px;color:#555;flex-shrink:0;">${names[k]}</div>
+      <div style="display:flex;gap:2px;flex-wrap:nowrap;overflow:hidden;">${cells}</div>
+    </div>`;
+  }).join('');
+
+  // ── BUILD HTML ──
+  const html=`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MEDS Health Report — ${name}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#1a1a1a;background:#fff;padding:32px;max-width:760px;margin:0 auto;line-height:1.5;}
+  h1{font-size:22px;font-weight:300;color:#111;margin-bottom:4px;letter-spacing:-.02em;}
+  h2{font-size:13px;font-weight:600;color:#111;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #111;}
+  h3{font-size:12px;font-weight:600;color:#444;margin-bottom:6px;}
+  .header{margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #111;}
+  .meds{font-size:11px;font-weight:700;letter-spacing:.15em;color:#3ecf8e;margin-bottom:8px;}
+  .meta{font-size:11px;color:#888;margin-top:3px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;}
+  .card{background:#f8f8f8;border-radius:8px;padding:14px;}
+  .card-val{font-size:26px;font-weight:300;color:#111;line-height:1;margin-bottom:4px;}
+  .card-lbl{font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;}
+  .section{margin-bottom:24px;}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #eee;font-size:12px;}
+  .row:last-child{border-bottom:none;}
+  .row-label{color:#555;}
+  .row-val{font-weight:500;color:#111;}
+  .obs{background:#f0faf5;border-left:3px solid #3ecf8e;padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:8px;font-size:12px;color:#333;line-height:1.55;}
+  .chart{display:flex;align-items:flex-end;gap:4px;height:100px;padding:0 4px;background:#f8f8f8;border-radius:8px;padding:12px 12px 8px;}
+  .footer{margin-top:32px;padding-top:14px;border-top:1px solid #ddd;font-size:10px;color:#aaa;display:flex;justify-content:space-between;}
+  .tag{display:inline-block;background:#e8f5ee;color:#2a7a50;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;margin-right:4px;}
+  .disclaimer{background:#fffbea;border:1px solid #f0e68c;border-radius:6px;padding:10px 14px;font-size:11px;color:#665;margin-bottom:20px;line-height:1.55;}
+  @media print{body{padding:20px;}button{display:none;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="meds">MEDS · Daily Wellness Tracker</div>
+  <h1>Wellness Report — ${name}</h1>
+  <div class="meta">Report period: ${dateRange}</div>
+  <div class="meta">Generated: ${today.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+</div>
+
+<div class="disclaimer">
+  ⚠️ This report is generated from self-reported wellness data logged by the patient via the MEDS app. It is intended as supplementary lifestyle context and should not be used as a primary diagnostic tool.
+</div>
+
+<div class="section">
+  <h2>Summary</h2>
+  <div class="grid-3">
+    <div class="card"><div class="card-val">${total}</div><div class="card-lbl">Days logged</div></div>
+    <div class="card"><div class="card-val">${consistency}%</div><div class="card-lbl">Consistency</div></div>
+    <div class="card"><div class="card-val">${avgScore||'—'}</div><div class="card-lbl">Avg MEDS score</div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="card-val">${fullMedsDays}</div><div class="card-lbl">Full MEDS days (all 4 pillars)</div></div>
+    <div class="card"><div class="card-val">${p.goal||'—'}</div><div class="card-lbl">Patient's primary goal</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Sleep</h2>
+  <div class="grid">
+    <div class="card"><div class="card-val">${avgSleep||'—'}<span style="font-size:14px;color:#888;"> hrs</span></div><div class="card-lbl">Avg nightly duration</div></div>
+    <div class="card"><div class="card-val">${avgSleepScore||'—'}<span style="font-size:14px;color:#888;">${avgSleepScore?'/100':''}</span></div><div class="card-lbl">Avg sleep score</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    ${commonBedtime?`<div class="row"><span class="row-label">Most common bedtime</span><span class="row-val">${commonBedtime}</span></div>`:''}
+    <div class="row"><span class="row-label">Average quality</span><span class="row-val">${qualLabel||'—'}</span></div>
+    <div class="row"><span class="row-label">Days with sleep logged</span><span class="row-val">${sleepEntries.length} of ${total}</span></div>
+    ${topFactors.length?`<div class="row"><span class="row-label">Common sleep factors</span><span class="row-val" style="text-align:right;max-width:60%;">${topFactors.join(' · ')}</span></div>`:''}
+  </div>
+</div>
+
+<div class="section">
+  <h2>Exercise</h2>
+  <div class="grid">
+    <div class="card"><div class="card-val">${exPerWeek}<span style="font-size:14px;color:#888;">×/wk</span></div><div class="card-lbl">Avg sessions per week</div></div>
+    <div class="card"><div class="card-val">${activeDays}<span style="font-size:14px;color:#888;"> active</span></div><div class="card-lbl">Active workout days</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="row"><span class="row-label">Rest / recovery days logged</span><span class="row-val">${restDays}</span></div>
+    <div class="row"><span class="row-label">Total exercise days</span><span class="row-val">${exDays} of ${total}</span></div>
+    ${topTypes.length?`<div class="row"><span class="row-label">Primary workout types</span><span class="row-val">${topTypes.join(' · ')}</span></div>`:''}
+  </div>
+</div>
+
+<div class="section">
+  <h2>Diet</h2>
+  <div class="grid">
+    <div class="card"><div class="card-val">${avgMeals||'—'}</div><div class="card-lbl">Avg meals per day</div></div>
+    <div class="card"><div class="card-val">${avgCals||'—'}<span style="font-size:14px;color:#888;">${avgCals?' cal':''}</span></div><div class="card-lbl">Avg daily calories (photo log)</div></div>
+  </div>
+  <div class="card" style="margin-bottom:12px;">
+    <div class="row"><span class="row-label">Days with diet logged</span><span class="row-val">${dietDays} of ${total}</span></div>
+    <div class="row"><span class="row-label">Dietary preference</span><span class="row-val">${p.dietPref||S.details&&S.details.dpref||'—'}</span></div>
+    <div class="row"><span class="row-label">Days with photo meal log</span><span class="row-val">${photoLogs.length}</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Mental Wellness — Meditation</h2>
+  <div class="grid">
+    <div class="card"><div class="card-val">${medDays}</div><div class="card-lbl">Sessions logged</div></div>
+    <div class="card"><div class="card-val">${avgMed||'—'}<span style="font-size:14px;color:#888;">${avgMed?' min':''}</span></div><div class="card-lbl">Avg session duration</div></div>
+  </div>
+  ${topMedTypes.length?`<div class="card" style="margin-bottom:12px;"><div class="row"><span class="row-label">Most used session types</span><span class="row-val">${topMedTypes.join(' · ')}</span></div><div class="row"><span class="row-label">Frequency</span><span class="row-val">${+(medDays/(days/7)).toFixed(1)}× per week avg</span></div></div>`:''}
+</div>
+
+${scoresByWeek.length>1?`<div class="section">
+  <h2>MEDS Score Trend</h2>
+  <div class="chart">${chartBars}</div>
+  <p style="font-size:10px;color:#aaa;margin-top:6px;text-align:center;">Weekly average MEDS score (0–10)</p>
+</div>`:''}
+
+<div class="section">
+  <h2>Consistency Heatmap — Last ${days} Days</h2>
+  <div class="card">${heatmapRows}</div>
+  <p style="font-size:10px;color:#aaa;margin-top:6px;">Each cell = one day. Coloured = logged. Grey = not logged.</p>
+</div>
+
+${obs.length?`<div class="section">
+  <h2>Key Observations</h2>
+  ${obs.map(o=>`<div class="obs">${o}</div>`).join('')}
+</div>`:''}
+
+<div class="footer">
+  <span>MEDS Wellness App · tr-gordon.github.io/meds-app</span>
+  <span>Generated ${today.toLocaleDateString()}</span>
+</div>
+
+<div style="text-align:center;margin-top:24px;">
+  <button onclick="window.print()" style="padding:10px 24px;background:#111;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Print / Save as PDF</button>
+</div>
+
+</body>
+</html>`;
+
+  const win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+}
+// ── END HEALTH REPORT ─────────────────────────────────────────
 
 function resetApp(){
   if(!confirm('This will erase all your MEDS data and history. Are you sure?'))return;
