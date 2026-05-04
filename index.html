@@ -1,3 +1,4 @@
+<!-- Cache bust: 1777907614 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1830,7 +1831,8 @@ function exportHealthReport(){
   }).join('');
 
   // ── BUILD HTML ──
-  const html=`<!DOCTYPE html>
+  const html=`<!-- Cache bust: 1777907614 -->
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -4153,6 +4155,110 @@ function handleFoodPhotoInline(input){
   input.value='';
 }
 
+async function analyzeTextDescription(){
+  const input=document.getElementById('meal-desc-input');
+  if(!input)return;
+  const desc=input.value.trim();
+  if(!desc)return;
+  const photoArea=currentPhotoCard&&currentPhotoCard._photoArea;
+  if(!photoArea)return;
+
+  // Show analyzing state
+  photoArea.innerHTML='<div class="meal-photo-analyzing"><div class="spinner" style="border-top-color:var(--d);width:18px;height:18px;border-width:2px;"></div><p>Estimating nutrition...</p></div>';
+
+  try{
+    const prompt=`Estimate the nutritional information for this meal: "${desc}". Return JSON only with no markdown or explanation: {"name":"meal name","calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"ingredients":["item1","item2"]}`;
+    const response=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:400,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data=await response.json();
+    const text=(data.content||[]).map(b=>b.text||'').join('');
+    const clean=text.replace(/```json|```/g,'').trim();
+    const result=JSON.parse(clean);
+    result.fromDescription=true;
+    result.description=desc;
+
+    // Store and render — same flow as photo result
+    if(!S.details.mealPhotos)S.details.mealPhotos={};
+    S.details.mealPhotos[currentPhotoMealIdx]=result;
+    if(!S.details.photoLog)S.details.photoLog=[];
+    const existing=S.details.photoLog.findIndex(p=>p.mealIdx===currentPhotoMealIdx);
+    const entry={...result,mealIdx:currentPhotoMealIdx,mealtime:currentPhotoNameRef?currentPhotoNameRef.textContent:''};
+    if(existing>=0)S.details.photoLog[existing]=entry;
+    else S.details.photoLog.push(entry);
+    saveStateLS(S);
+    updateDailyMacroBar();
+    renderInlinePhotoResult(photoArea,result,currentPhotoCard._camBtn,currentPhotoNameRef,currentPhotoMealIdx);
+  }catch(e){
+    photoArea.innerHTML=`
+      <div style="padding:12px;">
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">Couldn't estimate from description. Enter macros manually:</p>
+        <button onclick="showManualMacroEntry()" style="width:100%;padding:10px;border-radius:var(--radius-xs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Enter macros manually</button>
+      </div>`;
+  }
+}
+
+function showManualMacroEntry(){
+  const photoArea=currentPhotoCard&&currentPhotoCard._photoArea;
+  if(!photoArea)return;
+  photoArea.style.display='block';
+  photoArea.innerHTML=`
+    <div style="padding:12px;">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Enter the nutritional information manually:</p>
+      <input type="text" id="manual-meal-name" placeholder="Meal name" style="width:100%;margin-bottom:8px;font-size:13px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px;">Calories</label>
+          <input type="number" id="manual-cal" placeholder="0" style="width:100%;font-size:13px;" min="0">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px;">Protein (g)</label>
+          <input type="number" id="manual-pro" placeholder="0" style="width:100%;font-size:13px;" min="0">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px;">Carbs (g)</label>
+          <input type="number" id="manual-carb" placeholder="0" style="width:100%;font-size:13px;" min="0">
+        </div>
+        <div>
+          <label style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:4px;">Fat (g)</label>
+          <input type="number" id="manual-fat" placeholder="0" style="width:100%;font-size:13px;" min="0">
+        </div>
+      </div>
+      <button onclick="saveManualMacros()" style="width:100%;padding:10px;border-radius:var(--radius-xs);border:1.5px solid var(--d);background:var(--d-bg);color:var(--d-acc);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Save</button>
+    </div>`;
+}
+
+function saveManualMacros(){
+  const name=document.getElementById('manual-meal-name').value.trim()||'Manual entry';
+  const result={
+    name,
+    calories:parseFloat(document.getElementById('manual-cal').value)||0,
+    protein_g:parseFloat(document.getElementById('manual-pro').value)||0,
+    carbs_g:parseFloat(document.getElementById('manual-carb').value)||0,
+    fat_g:parseFloat(document.getElementById('manual-fat').value)||0,
+    ingredients:[],
+    manual:true
+  };
+  const photoArea=currentPhotoCard&&currentPhotoCard._photoArea;
+  if(!photoArea)return;
+  if(!S.details.mealPhotos)S.details.mealPhotos={};
+  S.details.mealPhotos[currentPhotoMealIdx]=result;
+  if(!S.details.photoLog)S.details.photoLog=[];
+  const existing=S.details.photoLog.findIndex(p=>p.mealIdx===currentPhotoMealIdx);
+  const entry={...result,mealIdx:currentPhotoMealIdx,mealtime:currentPhotoNameRef?currentPhotoNameRef.textContent:''};
+  if(existing>=0)S.details.photoLog[existing]=entry;
+  else S.details.photoLog.push(entry);
+  saveStateLS(S);
+  updateDailyMacroBar();
+  renderInlinePhotoResult(photoArea,result,currentPhotoCard&&currentPhotoCard._camBtn,currentPhotoNameRef,currentPhotoMealIdx);
+}
+
 async function analyzeInlinePhoto(){
   if(!currentPhotoCard)return;
   const photoArea=currentPhotoCard._photoArea;
@@ -4192,24 +4298,48 @@ async function analyzeInlinePhoto(){
     updateDailyMacroBar();
     renderInlinePhotoResult(photoArea,result,camBtn,currentPhotoNameRef,currentPhotoMealIdx);
   }catch(e){
-    photoArea.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted);">Could not analyze photo. Try again.</div>';
+    const hasKey=!!getApiKey();
+    if(hasKey){
+      // AI available but analysis failed — show text description fallback
+      photoArea.innerHTML=`
+        <div style="padding:12px;">
+          <p style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5;">Couldn't analyze the photo. Describe what you ate and I'll estimate the nutrition:</p>
+          <textarea id="meal-desc-input" placeholder="e.g. grilled chicken breast, cup of brown rice, steamed broccoli..." style="width:100%;min-height:64px;font-size:12px;padding:8px 10px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg2);color:var(--text);font-family:'DM Sans',sans-serif;resize:none;line-height:1.5;"></textarea>
+          <button onclick="analyzeTextDescription()" style="width:100%;margin-top:8px;padding:10px;border-radius:var(--radius-xs);border:1.5px solid var(--d);background:var(--d-bg);color:var(--d-acc);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Analyze description →</button>
+          <button onclick="showManualMacroEntry()" style="width:100%;margin-top:6px;padding:8px;border-radius:var(--radius-xs);border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;">Enter macros manually instead</button>
+        </div>`;
+    } else {
+      // No API key — go straight to manual entry
+      showManualMacroEntry();
+    }
   }
 }
 
 function renderInlinePhotoResult(photoArea,result,camBtn,nameRef,mealIdx){
-  if(camBtn){camBtn.className='meal-photo-btn has-photo';camBtn.textContent='📷 Photo logged';}
+  if(camBtn){
+    camBtn.className='meal-photo-btn has-photo';
+    camBtn.textContent=result.manual?'✏️ Macros logged':result.fromDescription?'📝 Description logged':'📷 Photo logged';
+  }
   photoArea.style.display='block';
+  const sourceTag=result.manual
+    ?'<span style="font-size:9px;color:var(--muted);background:var(--bg2);border:1px solid var(--border);padding:2px 7px;border-radius:10px;margin-bottom:4px;display:inline-block;">Manual entry</span>'
+    :result.fromDescription
+    ?'<span style="font-size:9px;color:var(--muted);background:var(--bg2);border:1px solid var(--border);padding:2px 7px;border-radius:10px;margin-bottom:4px;display:inline-block;">From description</span>'
+    :'';
   photoArea.innerHTML=`
     ${result.imgBase64?`<img class="meal-photo-thumb" src="data:image/jpeg;base64,${result.imgBase64}">`:''}
     <div class="meal-photo-macros">
-      <div class="meal-photo-macro">${Math.round(result.calories||0)} <span>cal</span></div>
-      <div class="meal-photo-macro">${Math.round(result.protein_g||0)}g <span>protein</span></div>
-      <div class="meal-photo-macro">${Math.round(result.carbs_g||0)}g <span>carbs</span></div>
-      <div class="meal-photo-macro">${Math.round(result.fat_g||0)}g <span>fat</span></div>
+      ${sourceTag}
+      <div style="display:flex;gap:10px;flex-wrap:wrap;width:100%;">
+        <div class="meal-photo-macro">${Math.round(result.calories||0)} <span>cal</span></div>
+        <div class="meal-photo-macro">${Math.round(result.protein_g||0)}g <span>protein</span></div>
+        <div class="meal-photo-macro">${Math.round(result.carbs_g||0)}g <span>carbs</span></div>
+        <div class="meal-photo-macro">${Math.round(result.fat_g||0)}g <span>fat</span></div>
+      </div>
     </div>
     <div class="meal-photo-actions">
-      <button class="meal-photo-action-btn" onclick="useAIName(${mealIdx},this)" title="Replace meal name with AI identification">Use AI name: "${result.name}"</button>
-      <button class="meal-photo-action-btn" onclick="keepPlanName(${mealIdx},this)" title="Keep your planned meal name">Keep plan name</button>
+      <button class="meal-photo-action-btn" onclick="useAIName(${JSON.stringify(mealIdx)},this)" title="Replace meal name with AI identification">Use: "${result.name}"</button>
+      <button class="meal-photo-action-btn" onclick="keepPlanName(${JSON.stringify(mealIdx)},this)" title="Keep your planned meal name">Keep plan name</button>
     </div>`;
 }
 
