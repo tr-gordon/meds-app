@@ -305,6 +305,21 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
 .meal-card-meta{font-size:11px;color:var(--muted);margin-bottom:6px;}
 .meal-card-recipe{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--d);text-decoration:none;border:1px solid var(--d);border-radius:20px;padding:3px 10px;cursor:pointer;}
 .meal-card-recipe:active{opacity:.7;}
+.meal-photo-btn{background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;color:var(--muted);font-size:10px;display:flex;align-items:center;gap:4px;transition:all .15s;flex-shrink:0;}
+.meal-photo-btn:active{border-color:var(--d);color:var(--d);}
+.meal-photo-btn.has-photo{border-color:var(--d);color:var(--d);background:var(--d-bg);}
+.meal-photo-result{margin-top:8px;background:var(--bg3);border-radius:var(--radius-xs);overflow:hidden;border:1px solid var(--border);}
+.meal-photo-thumb{width:100%;max-height:140px;object-fit:cover;display:block;}
+.meal-photo-macros{display:flex;gap:10px;padding:8px 10px;flex-wrap:wrap;}
+.meal-photo-macro{font-size:11px;color:var(--text);}
+.meal-photo-macro span{color:var(--muted);}
+.meal-photo-actions{display:flex;gap:8px;padding:6px 10px 8px;border-top:1px solid var(--border);}
+.meal-photo-action-btn{flex:1;padding:7px;border-radius:6px;border:1px solid var(--border);background:transparent;font-size:11px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center;transition:all .15s;}
+.meal-photo-action-btn:active{border-color:var(--d);color:var(--d-acc);background:var(--d-bg);}
+.meal-photo-analyzing{padding:12px;text-align:center;}
+.meal-photo-analyzing p{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px;}
+.unplanned-card{background:var(--bg2);border:1px dashed var(--border-hi);border-radius:var(--radius-sm);padding:12px;margin-top:8px;}
+.unplanned-card-name{font-size:13px;color:var(--text);font-weight:500;margin-bottom:4px;}
 
 .achievement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;}
 .badge{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;transition:border-color .2s;}
@@ -1186,161 +1201,122 @@ textarea:focus,input:focus{outline:none;border-color:var(--e);background:var(--b
 <div class="modal-overlay" id="modal-d">
   <div class="modal">
     <div class="modal-drag"></div>
-    <div class="modal-head"><p class="modal-title" style="color:var(--d-acc);">Diet</p></div>
+    <div class="modal-head">
+      <p class="modal-title" style="color:var(--d-acc);">Diet</p>
+      <!-- Daily macro bar — shown when photos logged -->
+      <div id="diet-macro-bar" style="display:none;margin-top:10px;background:var(--bg3);border-radius:var(--radius-xs);padding:8px 12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">Today's totals</span>
+          <span style="font-size:10px;color:var(--d);" id="diet-macro-source"></span>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div><span style="font-size:14px;font-weight:500;color:var(--text);" id="dmb-cal">0</span><span style="font-size:10px;color:var(--muted);"> cal</span></div>
+          <div><span style="font-size:14px;font-weight:500;color:var(--text);" id="dmb-pro">0</span><span style="font-size:10px;color:var(--muted);">g protein</span></div>
+          <div><span style="font-size:14px;font-weight:500;color:var(--text);" id="dmb-carb">0</span><span style="font-size:10px;color:var(--muted);">g carbs</span></div>
+          <div><span style="font-size:14px;font-weight:500;color:var(--text);" id="dmb-fat">0</span><span style="font-size:10px;color:var(--muted);">g fat</span></div>
+        </div>
+      </div>
+    </div>
     <div class="modal-body">
       <div class="diet-tabs">
-        <button class="dtab active" id="dtab-plan" onclick="switchDietTab('plan')">Meal plan</button>
-        <button class="dtab" id="dtab-photo" onclick="switchDietTab('photo')">Photo log</button>
+        <button class="dtab active" id="mptab-today" onclick="switchMealTab('today')" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);">Today</button>
+        <button class="dtab" id="mptab-week" onclick="switchMealTab('week')">This week</button>
+        <button class="dtab" id="mptab-grocery" onclick="switchMealTab('grocery')">Grocery</button>
       </div>
 
-      <!-- MEAL PLAN TAB -->
-      <div id="diet-tab-plan">
-        <div class="diet-tabs" style="margin-bottom:14px;">
-          <button class="dtab active" id="mptab-today" onclick="switchMealTab('today')" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);">Today</button>
-          <button class="dtab" id="mptab-week" onclick="switchMealTab('week')">This week</button>
-          <button class="dtab" id="mptab-grocery" onclick="switchMealTab('grocery')">Grocery list</button>
+      <!-- TODAY TAB — unified meal plan + photo logging -->
+      <div id="mp-tab-today">
+        <div id="diet-today-from-plan" style="display:none;">
+          <div class="ai-card" style="margin-bottom:12px;">
+            <p class="ai-tag">Today's meals</p>
+            <p class="ai-text" id="diet-today-day-lbl"></p>
+            <p id="diet-today-cuisine" style="font-size:11px;color:var(--d);margin-top:2px;"></p>
+          </div>
+          <div id="diet-today-plan-list"></div>
+          <!-- Unplanned meal add button -->
+          <button id="add-unplanned-btn" onclick="addUnplannedMeal()" style="width:100%;margin-top:10px;padding:10px;border-radius:var(--radius-sm);border:1px dashed var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1v11M1 6.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Add unplanned meal
+          </button>
+          <div id="unplanned-meals-list"></div>
         </div>
-
-        <!-- TODAY MEAL -->
-        <div id="mp-tab-today">
-          <div id="diet-today-from-plan" style="display:none;">
-            <div class="ai-card" style="margin-bottom:12px;">
-              <p class="ai-tag">Today's meals</p>
-              <p class="ai-text" id="diet-today-day-lbl"></p>
-              <p id="diet-today-cuisine" style="font-size:11px;color:var(--d);margin-top:2px;"></p>
-            </div>
-            <div id="diet-today-plan-list"></div>
-            <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px;">Tap any meal to edit it</p>
+        <div id="diet-today-no-plan">
+          <div style="text-align:center;padding:20px 0 8px;">
+            <p style="font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;line-height:1.6;">No weekly meal plan yet. Go to "This week" to generate your plan first.</p>
           </div>
-          <div id="diet-today-no-plan">
-            <div style="text-align:center;padding:20px 0 8px;">
-              <p style="font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;line-height:1.6;">No weekly meal plan yet. Go to "This week" to generate your plan first.</p>
-            </div>
-            <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:8px;" onclick="switchMealTab('week')">Set up weekly meal plan →</button>
-          </div>
-        </div>
-
-        <!-- WEEKLY MEAL -->
-        <div id="mp-tab-week" style="display:none;">
-          <p class="field-lbl">Cuisine style <span style="color:var(--d);font-size:10px;letter-spacing:.03em;text-transform:none;">optional</span></p>
-          <div class="chip-row" id="cuisine-chips">
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Any','d')">Any</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Jamaican','d')">Jamaican</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Mediterranean','d')">Mediterranean</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Asian','d')">Asian</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Mexican','d')">Mexican</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Indian','d')">Indian</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','American','d')">American</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Middle Eastern','d')">Middle Eastern</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','West African','d')">West African</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Italian','d')">Italian</div>
-            <div class="chip" onclick="selChip(this,'wk-mcuisine','Japanese','d')">Japanese</div>
-          </div>
-          <p class="field-lbl">Goals <span style="color:var(--d);font-size:10px;letter-spacing:.03em;text-transform:none;">select all that apply</span></p>
-          <div class="chip-row">
-            <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Lose weight','d')">Lose weight</div>
-            <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Build muscle','d')">Build muscle</div>
-            <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Improve energy','d')">Improve energy</div>
-            <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Eat cleaner','d')">Eat cleaner</div>
-            <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Reduce inflammation','d')">Reduce inflammation</div>
-            <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Gut health','d')">Gut health</div>
-          </div>
-          <p class="field-lbl">Dietary preference</p>
-          <div class="chip-row">
-            <div class="chip" onclick="selChip(this,'wk-mpref','No restriction','d')">No restriction</div>
-            <div class="chip" onclick="selChip(this,'wk-mpref','Vegetarian','d')">Vegetarian</div>
-            <div class="chip" onclick="selChip(this,'wk-mpref','Vegan','d')">Vegan</div>
-            <div class="chip" onclick="selChip(this,'wk-mpref','Keto','d')">Keto</div>
-            <div class="chip" onclick="selChip(this,'wk-mpref','Paleo','d')">Paleo</div>
-          </div>
-          <p class="field-lbl">Meals per day</p>
-          <div class="chip-row">
-            <div class="chip" onclick="selChip(this,'wk-mmeals','2','d')">2</div>
-            <div class="chip" onclick="selChip(this,'wk-mmeals','3','d')">3</div>
-            <div class="chip" onclick="selChip(this,'wk-mmeals','4','d')">4</div>
-            <div class="chip" onclick="selChip(this,'wk-mmeals','5','d')">5</div>
-          </div>
-          <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:14px;" onclick="generateWeeklyMeal()">Generate weekly meal plan</button>
-          <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px;" id="meal-gen-note">Select a cuisine + add an API key in Profile for AI-generated meal plans</p>
-          <div class="food-loading" id="wk-meal-loading" style="display:none;">
-            <div class="spinner" style="border-top-color:var(--d);"></div>
-            <p style="color:var(--d);">Planning your week...</p>
-          </div>
-          <div id="weekly-meal-result" style="display:none;margin-top:12px;"></div>
-        </div>
-
-        <!-- GROCERY LIST -->
-        <div id="mp-tab-grocery" style="display:none;">
-          <div id="grocery-empty" style="text-align:center;padding:28px 0;">
-            <p style="font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;">Generate a weekly meal plan first to get your grocery list.</p>
-          </div>
-          <div id="grocery-content" style="display:none;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-              <p style="font-size:11px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;">Shopping list</p>
-              <button onclick="regenerateGrocery()" style="font-size:11px;color:var(--d);background:none;border:none;cursor:pointer;">Regenerate</button>
-            </div>
-            <div id="grocery-list"></div>
-          </div>
-          <div class="food-loading" id="grocery-loading" style="display:none;">
-            <div class="spinner" style="border-top-color:var(--d);"></div>
-            <p style="color:var(--d);">Building your grocery list...</p>
-          </div>
+          <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:8px;" onclick="switchMealTab('week')">Set up weekly meal plan →</button>
         </div>
       </div>
 
-      <!-- PHOTO LOG TAB -->
-      <div id="diet-tab-photo" style="display:none;">
-        <!-- API KEY PROMPT -->
-        <div id="api-key-prompt" style="display:none;background:var(--bg3);border:1px solid var(--d);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
-          <p style="font-size:12px;font-weight:500;color:var(--d-acc);margin-bottom:10px;">Choose AI provider for photo analysis</p>
-          <div style="display:flex;gap:6px;margin-bottom:12px;" id="provider-chips-prompt">
-            <div class="chip sel-d" id="pchip-anthropic" onclick="selectProvider('anthropic')">Claude</div>
-            <div class="chip" id="pchip-openai" onclick="selectProvider('openai')">OpenAI</div>
-            <div class="chip" id="pchip-gemini" onclick="selectProvider('gemini')">Gemini</div>
-          </div>
-          <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px;" id="provider-hint-prompt">Anthropic Claude — get key at console.anthropic.com</p>
-          <input type="password" id="api-key-input" placeholder="Paste your API key..." style="margin-bottom:8px;font-size:13px;">
-          <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);" onclick="saveApiKey()">Save & continue</button>
+      <!-- WEEKLY MEAL -->
+      <div id="mp-tab-week" style="display:none;">
+        <p class="field-lbl">Cuisine style <span style="color:var(--d);font-size:10px;letter-spacing:.03em;text-transform:none;">optional</span></p>
+        <div class="chip-row" id="cuisine-chips">
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Any','d')">Any</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Jamaican','d')">Jamaican</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Mediterranean','d')">Mediterranean</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Asian','d')">Asian</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Mexican','d')">Mexican</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Indian','d')">Indian</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','American','d')">American</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Middle Eastern','d')">Middle Eastern</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','West African','d')">West African</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Italian','d')">Italian</div>
+          <div class="chip" onclick="selChip(this,'wk-mcuisine','Japanese','d')">Japanese</div>
         </div>
-        <div id="api-key-set" style="display:none;margin-bottom:10px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 13px;border:1px solid var(--border);">
-            <p style="font-size:12px;color:var(--muted);" id="api-key-set-label">API key saved on device</p>
-            <button onclick="removeApiKey()" style="font-size:11px;color:#e85a4a;background:none;border:none;cursor:pointer;">Remove</button>
-          </div>
+        <p class="field-lbl">Goals <span style="color:var(--d);font-size:10px;letter-spacing:.03em;text-transform:none;">select all that apply</span></p>
+        <div class="chip-row">
+          <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Lose weight','d')">Lose weight</div>
+          <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Build muscle','d')">Build muscle</div>
+          <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Improve energy','d')">Improve energy</div>
+          <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Eat cleaner','d')">Eat cleaner</div>
+          <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Reduce inflammation','d')">Reduce inflammation</div>
+          <div class="chip" onclick="toggleMultiChip(this,'wk-mgoal','Gut health','d')">Gut health</div>
         </div>
-        <p class="field-lbl">What meal is this?</p>
-        <div class="chip-row" style="margin-bottom:12px;">
-          <div class="chip" onclick="selChip(this,'mealtime','Breakfast','d')">Breakfast</div>
-          <div class="chip" onclick="selChip(this,'mealtime','Lunch','d')">Lunch</div>
-          <div class="chip" onclick="selChip(this,'mealtime','Dinner','d')">Dinner</div>
-          <div class="chip" onclick="selChip(this,'mealtime','Snack','d')">Snack</div>
+        <p class="field-lbl">Dietary preference</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'wk-mpref','No restriction','d')">No restriction</div>
+          <div class="chip" onclick="selChip(this,'wk-mpref','Vegetarian','d')">Vegetarian</div>
+          <div class="chip" onclick="selChip(this,'wk-mpref','Vegan','d')">Vegan</div>
+          <div class="chip" onclick="selChip(this,'wk-mpref','Keto','d')">Keto</div>
+          <div class="chip" onclick="selChip(this,'wk-mpref','Paleo','d')">Paleo</div>
         </div>
-        <p class="field-lbl">Photo</p>
-        <input type="file" id="food-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFoodPhoto(this)">
-        <div class="photo-zone" onclick="handlePhotoTap()">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="2" y="6" width="24" height="18" rx="3" stroke="var(--muted)" stroke-width="1.5"/><circle cx="14" cy="15" r="4.5" stroke="var(--d)" stroke-width="1.5"/><path d="M10 6l1.5-2.5h5L18 6" stroke="var(--muted)" stroke-width="1.5" stroke-linejoin="round"/></svg>
-          <p>Tap to take a photo or choose from library</p>
+        <p class="field-lbl">Meals per day</p>
+        <div class="chip-row">
+          <div class="chip" onclick="selChip(this,'wk-mmeals','2','d')">2</div>
+          <div class="chip" onclick="selChip(this,'wk-mmeals','3','d')">3</div>
+          <div class="chip" onclick="selChip(this,'wk-mmeals','4','d')">4</div>
+          <div class="chip" onclick="selChip(this,'wk-mmeals','5','d')">5</div>
         </div>
-        <img id="food-preview" class="photo-preview">
-        <div class="food-loading" id="food-loading">
-          <div class="spinner"></div>
-          <p>Analyzing your meal...</p>
+        <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:14px;" onclick="generateWeeklyMeal()">Generate weekly meal plan</button>
+        <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:6px;" id="meal-gen-note">Select a cuisine + add an API key in Profile for AI-generated meal plans</p>
+        <div class="food-loading" id="wk-meal-loading" style="display:none;">
+          <div class="spinner" style="border-top-color:var(--d);"></div>
+          <p style="color:var(--d);">Planning your week...</p>
         </div>
-        <div class="food-result" id="food-result">
-          <div class="food-result-name" id="food-result-name"></div>
-          <div class="food-result-desc" id="food-result-desc"></div>
-          <div class="macro-grid">
-            <div class="macro-cell"><div class="macro-val" id="macro-cal">–</div><div class="macro-lbl">Calories</div></div>
-            <div class="macro-cell"><div class="macro-val" id="macro-pro">–</div><div class="macro-lbl">Protein</div></div>
-            <div class="macro-cell"><div class="macro-val" id="macro-carb">–</div><div class="macro-lbl">Carbs</div></div>
-            <div class="macro-cell"><div class="macro-val" id="macro-fat">–</div><div class="macro-lbl">Fat</div></div>
-          </div>
-          <p class="field-lbl" style="margin-top:4px;">Ingredients identified</p>
-          <div class="ingr-list" id="food-ingr"></div>
-          <button class="btn-primary" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:12px;" onclick="logFoodPhoto()">Log this meal</button>
-        </div>
-        <div class="photo-log-list" id="photo-log-list"></div>
+        <div id="weekly-meal-result" style="display:none;margin-top:12px;"></div>
       </div>
+
+      <!-- GROCERY LIST -->
+      <div id="mp-tab-grocery" style="display:none;">
+        <div id="grocery-empty" style="text-align:center;padding:28px 0;">
+          <p style="font-size:13px;color:var(--muted);font-style:italic;font-family:'DM Serif Display',serif;">Generate a weekly meal plan first to get your grocery list.</p>
+        </div>
+        <div id="grocery-content" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <p style="font-size:11px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;">Shopping list</p>
+            <button onclick="regenerateGrocery()" style="font-size:11px;color:var(--d);background:none;border:none;cursor:pointer;">Regenerate</button>
+          </div>
+          <div id="grocery-list"></div>
+        </div>
+        <div class="food-loading" id="grocery-loading" style="display:none;">
+          <div class="spinner" style="border-top-color:var(--d);"></div>
+          <p style="color:var(--d);">Building your grocery list...</p>
+        </div>
+      </div>
+
+      <!-- Hidden file input for photo capture -->
+      <input type="file" id="food-file-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFoodPhotoInline(this)">
     </div>
     <div class="modal-foot">
       <button class="btn-primary" id="save-d-btn" style="border-color:var(--d);background:var(--d-bg);color:var(--d-acc);display:none;" onclick="saveD()">Log meal plan</button>
@@ -2087,6 +2063,9 @@ function openModal(k){
   }
   if(k==='d'){
     loadTodayMeal();
+    updateDailyMacroBar();
+    // Reset to Today tab
+    switchMealTab('today');
     const foot=document.querySelector('#modal-d .modal-foot');
     let clrBtn=document.getElementById('clear-d');
     if(S.checked.d&&!clrBtn){
@@ -2095,7 +2074,6 @@ function openModal(k){
       clrBtn.textContent='Clear log';clrBtn.onclick=()=>clearPillar('d');
       foot.insertBefore(clrBtn,foot.lastElementChild);
     }else if(!S.checked.d&&clrBtn){clrBtn.remove();}
-    if(d.photoLog&&d.photoLog.length)renderPhotoLog();
   }
   if(k==='s'){
     // Always start on log tab
@@ -3630,6 +3608,67 @@ function getCuisineMeals(cuisine,goal){
   return c[goal]||c.default||null;
 }
 
+function pickMealsByCount(dayMeals, numMeals){
+  // dayMeals is an array of "Label: Dish" strings
+  // We want to pick numMeals from the available items intelligently
+  // Always include Breakfast and Dinner; fill middle with Lunch then snacks
+  const labeled=dayMeals.map(m=>{
+    const col=m.indexOf(':');
+    return{label:col>0?m.slice(0,col).trim().toLowerCase():'',full:m};
+  });
+  const byLabel=(l)=>labeled.find(m=>m.label.includes(l));
+  const breakfast=byLabel('breakfast');
+  const lunch=byLabel('lunch');
+  const dinner=byLabel('dinner');
+  const snacks=labeled.filter(m=>m.label.includes('snack')||m.label.includes('morning')||m.label.includes('afternoon'));
+
+  // Snack labels to use when adding extras
+  const snackLabels=['Morning snack','Afternoon snack','Evening snack'];
+
+  // Build base meals
+  const SNACK_FILLERS=[
+    'Morning snack: Greek yogurt & mixed berries',
+    'Morning snack: Apple & almond butter',
+    'Morning snack: Handful of mixed nuts & fruit',
+    'Afternoon snack: Hummus & veggie sticks',
+    'Afternoon snack: Rice cakes & nut butter',
+    'Afternoon snack: Cottage cheese & cucumber',
+    'Evening snack: Protein shake',
+    'Evening snack: Warm herbal tea & a handful of nuts',
+  ];
+
+  let result=[];
+  if(numMeals===2){
+    result=[breakfast,dinner].filter(Boolean).map(m=>m.full);
+    if(result.length<2&&dayMeals.length>=2)result=dayMeals.slice(0,2);
+  } else if(numMeals===3){
+    result=[breakfast,lunch,dinner].filter(Boolean).map(m=>m.full);
+    if(result.length<3)result=dayMeals.slice(0,3);
+  } else if(numMeals===4){
+    // Breakfast + Morning snack + Lunch + Dinner
+    const snack=snacks[0]||{full:SNACK_FILLERS[Math.floor(Math.random()*4)]};
+    result=[breakfast,snack,lunch,dinner].filter(Boolean).map(m=>m.full);
+    if(result.length<4){
+      // Fill from existing + filler snack
+      result=[breakfast,lunch,dinner].filter(Boolean).map(m=>m.full);
+      result.splice(1,0,SNACK_FILLERS[Math.floor(Math.random()*4)]);
+    }
+    result=result.slice(0,4);
+  } else if(numMeals>=5){
+    // Breakfast + Morning snack + Lunch + Afternoon snack + Dinner
+    const s1=snacks[0]||{full:SNACK_FILLERS[Math.floor(Math.random()*4)]};
+    const s2=snacks[1]||{full:SNACK_FILLERS[4+Math.floor(Math.random()*3)]};
+    result=[breakfast,s1,lunch,s2,dinner].filter(Boolean).map(m=>m.full);
+    if(result.length<5){
+      result=[breakfast,lunch,dinner].filter(Boolean).map(m=>m.full);
+      result.splice(1,0,SNACK_FILLERS[Math.floor(Math.random()*4)]);
+      result.splice(3,0,SNACK_FILLERS[4+Math.floor(Math.random()*3)]);
+    }
+    result=result.slice(0,5);
+  }
+  return result.length?result:dayMeals.slice(0,numMeals);
+}
+
 function buildWeeklyMealPlan(goals,pref,mealsPerDay,cuisine){
   const dayNames=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const numMeals=parseInt(mealsPerDay)||3;
@@ -3642,7 +3681,7 @@ function buildWeeklyMealPlan(goals,pref,mealsPerDay,cuisine){
     if(cuisineDays){
       return{days:dayNames.map((name,i)=>{
         const dayMeals=cuisineDays[i%cuisineDays.length];
-        return{day:name,meals:dayMeals.slice(0,numMeals),cuisine};
+        return{day:name,meals:pickMealsByCount(dayMeals,numMeals),cuisine};
       })};
     }
   }
@@ -3653,7 +3692,7 @@ function buildWeeklyMealPlan(goals,pref,mealsPerDay,cuisine){
   const mealData=WK_MEALS[prefKey][goalKey];
   return{days:dayNames.map((name,i)=>{
     const dayMeals=mealData[i%mealData.length];
-    return{day:name,meals:dayMeals.slice(0,numMeals)};
+    return{day:name,meals:pickMealsByCount(dayMeals,numMeals)};
   })};
 }
 
@@ -4097,6 +4136,170 @@ function getMealSearchTerm(mealStr){
   return main;
 }
 
+// ── INLINE PHOTO LOGGING ─────────────────────────────────────
+let currentPhotoMealIdx=-1;
+let currentPhotoCard=null;
+let currentPhotoNameRef=null;
+let currentPhotoBase64='';
+
+function handleFoodPhotoInline(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    currentPhotoBase64=e.target.result.split(',')[1];
+    analyzeInlinePhoto();
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+async function analyzeInlinePhoto(){
+  if(!currentPhotoCard)return;
+  const photoArea=currentPhotoCard._photoArea;
+  const camBtn=currentPhotoCard._camBtn;
+  if(!photoArea)return;
+
+  // Show analyzing state
+  photoArea.style.display='block';
+  photoArea.innerHTML='<div class="meal-photo-analyzing"><div class="spinner" style="border-top-color:var(--d);width:18px;height:18px;border-width:2px;"></div><p>Analyzing your meal...</p></div>';
+
+  const key=getApiKey();
+  if(!key){
+    photoArea.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted);">Add an AI API key in Profile to enable photo analysis.</div>';
+    return;
+  }
+
+  try{
+    const prompt='Analyze this meal photo. Return JSON only: {"name":"dish name","calories":number,"protein_g":number,"carbs_g":number,"fat_g":number,"ingredients":["item1","item2"]}. No markdown, no explanation.';
+    const data=await callVisionAPI(currentPhotoBase64,prompt);
+    const text=data.content.map(b=>b.text||'').join('');
+    const clean=text.replace(/```json|```/g,'').trim();
+    const result=JSON.parse(clean);
+    result.imgBase64=currentPhotoBase64;
+
+    // Store photo on this meal index
+    if(!S.details.mealPhotos)S.details.mealPhotos={};
+    S.details.mealPhotos[currentPhotoMealIdx]=result;
+
+    // Also add to legacy photoLog for history/trends compat
+    if(!S.details.photoLog)S.details.photoLog=[];
+    const existing=S.details.photoLog.findIndex(p=>p.mealIdx===currentPhotoMealIdx);
+    const entry={...result,mealIdx:currentPhotoMealIdx,mealtime:currentPhotoNameRef?currentPhotoNameRef.textContent:''};
+    if(existing>=0)S.details.photoLog[existing]=entry;
+    else S.details.photoLog.push(entry);
+
+    saveStateLS(S);
+    updateDailyMacroBar();
+    renderInlinePhotoResult(photoArea,result,camBtn,currentPhotoNameRef,currentPhotoMealIdx);
+  }catch(e){
+    photoArea.innerHTML='<div style="padding:10px;font-size:11px;color:var(--muted);">Could not analyze photo. Try again.</div>';
+  }
+}
+
+function renderInlinePhotoResult(photoArea,result,camBtn,nameRef,mealIdx){
+  if(camBtn){camBtn.className='meal-photo-btn has-photo';camBtn.textContent='📷 Photo logged';}
+  photoArea.style.display='block';
+  photoArea.innerHTML=`
+    ${result.imgBase64?`<img class="meal-photo-thumb" src="data:image/jpeg;base64,${result.imgBase64}">`:''}
+    <div class="meal-photo-macros">
+      <div class="meal-photo-macro">${Math.round(result.calories||0)} <span>cal</span></div>
+      <div class="meal-photo-macro">${Math.round(result.protein_g||0)}g <span>protein</span></div>
+      <div class="meal-photo-macro">${Math.round(result.carbs_g||0)}g <span>carbs</span></div>
+      <div class="meal-photo-macro">${Math.round(result.fat_g||0)}g <span>fat</span></div>
+    </div>
+    <div class="meal-photo-actions">
+      <button class="meal-photo-action-btn" onclick="useAIName(${mealIdx},this)" title="Replace meal name with AI identification">Use AI name: "${result.name}"</button>
+      <button class="meal-photo-action-btn" onclick="keepPlanName(${mealIdx},this)" title="Keep your planned meal name">Keep plan name</button>
+    </div>`;
+}
+
+function useAIName(mealIdx,btn){
+  const photo=S.details.mealPhotos&&S.details.mealPhotos[mealIdx];
+  if(!photo||!currentPhotoNameRef)return;
+  currentPhotoNameRef.textContent=photo.name||'';
+  // Update plan meal name
+  if(S.weeklyMealPlan){
+    const FULL_DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    const todayName=FULL_DAYS[new Date().getDay()];
+    const dayEntry=(S.weeklyMealPlan.days||[]).find(d=>d.day===todayName);
+    if(dayEntry&&dayEntry.meals&&dayEntry.meals[mealIdx]){
+      const existing=dayEntry.meals[mealIdx];
+      const colonIdx=existing.indexOf(':');
+      const label=colonIdx>0?existing.slice(0,colonIdx+1)+' ':'';
+      dayEntry.meals[mealIdx]=label+photo.name;
+    }
+  }
+  saveStateLS(S);
+  if(btn&&btn.parentNode){btn.parentNode.innerHTML='<div style="font-size:10px;color:var(--d);padding:4px 8px;">✓ Name updated</div>';}
+}
+
+function keepPlanName(mealIdx,btn){
+  if(btn&&btn.parentNode){btn.parentNode.innerHTML='<div style="font-size:10px;color:var(--muted);padding:4px 8px;">✓ Plan name kept</div>';}
+}
+
+function updateDailyMacroBar(){
+  const photos=S.details.mealPhotos||{};
+  const unplanned=S.details.unplannedMeals||[];
+  const allPhotos=[...Object.values(photos),...unplanned.filter(u=>u.photo).map(u=>u.photo)];
+  if(!allPhotos.length){document.getElementById('diet-macro-bar').style.display='none';return;}
+  const totals=allPhotos.reduce((a,p)=>({cal:a.cal+(p.calories||0),pro:a.pro+(p.protein_g||0),carb:a.carb+(p.carbs_g||0),fat:a.fat+(p.fat_g||0)}),{cal:0,pro:0,carb:0,fat:0});
+  document.getElementById('diet-macro-bar').style.display='block';
+  document.getElementById('dmb-cal').textContent=Math.round(totals.cal);
+  document.getElementById('dmb-pro').textContent=Math.round(totals.pro);
+  document.getElementById('dmb-carb').textContent=Math.round(totals.carb);
+  document.getElementById('dmb-fat').textContent=Math.round(totals.fat);
+  document.getElementById('diet-macro-source').textContent=allPhotos.length+' meal'+(allPhotos.length>1?'s':'')+' logged';
+}
+
+function addUnplannedMeal(){
+  const list=document.getElementById('unplanned-meals-list');
+  const card=document.createElement('div');
+  card.className='unplanned-card';
+  const nameInput=document.createElement('input');
+  nameInput.type='text';nameInput.placeholder='What did you eat?';
+  nameInput.style.cssText='width:100%;margin-bottom:8px;font-size:13px;';
+  const photoBtn=document.createElement('button');
+  photoBtn.className='meal-photo-btn';
+  photoBtn.style.cssText='width:100%;justify-content:center;';
+  photoBtn.innerHTML='📷 Add photo for AI analysis';
+
+  let savedPhoto=null;
+  const photoArea=document.createElement('div');
+  photoArea.className='meal-photo-result';
+  photoArea.style.display='none';
+  card._photoArea=photoArea;
+
+  photoBtn.addEventListener('click',()=>{
+    currentPhotoMealIdx='unplanned_'+Date.now();
+    currentPhotoCard=card;
+    currentPhotoNameRef={textContent:nameInput.value||'Unplanned meal'};
+    document.getElementById('food-file-input').click();
+  });
+
+  const saveBtn=document.createElement('button');
+  saveBtn.className='btn-primary';
+  saveBtn.style.cssText='border-color:var(--d);background:var(--d-bg);color:var(--d-acc);margin-top:8px;font-size:12px;padding:10px;';
+  saveBtn.textContent='Save unplanned meal';
+  saveBtn.addEventListener('click',()=>{
+    const name=nameInput.value.trim()||'Unplanned meal';
+    const photo=S.details.mealPhotos&&S.details.mealPhotos[currentPhotoMealIdx];
+    if(!S.details.unplannedMeals)S.details.unplannedMeals=[];
+    S.details.unplannedMeals.push({name,photo:photo||null,time:getCurrentTimeStr()});
+    if(!S.checked.d){S.checked.d=true;if(Object.values(S.checked).every(Boolean))S.score=computeScore();}
+    persistToday();renderAll();updateDailyMacroBar();
+    // Replace card with summary
+    card.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;font-weight:500;color:var(--d-acc);">'+name+'</span>'+(photo?'<span style="font-size:11px;color:var(--muted);">'+Math.round(photo.calories||0)+' cal</span>':'')+'</div>';
+  });
+
+  card.appendChild(nameInput);
+  card.appendChild(photoBtn);
+  card.appendChild(photoArea);
+  card.appendChild(saveBtn);
+  list.appendChild(card);
+  nameInput.focus();
+}
+// ── END INLINE PHOTO LOGGING ──────────────────────────────────
+
 function getCurrentTimeStr(){
   const now=new Date();
   return String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
@@ -4193,16 +4396,57 @@ function makeMealCard(meal, mealIdx, dayIdx, onCheck, onEdit, isDone, mealTime, 
   blurbEl.textContent=blurb;
   body.appendChild(blurbEl);
 
-  // Recipe link
-  const linkRow=document.createElement('div');linkRow.style.cssText='margin-top:4px;';
-  const link=document.createElement('a');
-  link.className='meal-card-recipe';
-  link.href=recipeUrl;
-  link.target='_blank';
-  link.rel='noopener';
-  link.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Recipe';
-  linkRow.appendChild(link);
-  body.appendChild(linkRow);
+  // Camera button row (only in Today view)
+  if(onTimeEdit!==undefined){
+    const actionRow=document.createElement('div');
+    actionRow.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-top:8px;';
+
+    // Recipe link
+    const linkWrap=document.createElement('div');
+    const link=document.createElement('a');
+    link.className='meal-card-recipe';
+    link.href=recipeUrl;link.target='_blank';link.rel='noopener';
+    link.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Recipe';
+    linkWrap.appendChild(link);
+
+    // Camera button
+    const existingPhoto=mealTime&&S.details&&S.details.mealPhotos&&S.details.mealPhotos[mealIdx];
+    const camBtn=document.createElement('button');
+    camBtn.className='meal-photo-btn'+(existingPhoto?' has-photo':'');
+    camBtn.innerHTML='<svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="7.5" r="2.2" stroke="currentColor" stroke-width="1.2"/><path d="M5 3l.8-1.5h2.4L9 3" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>'+(existingPhoto?' Photo logged':'📷 Add photo');
+    camBtn.addEventListener('click',()=>{
+      currentPhotoMealIdx=mealIdx;
+      currentPhotoCard=card;
+      currentPhotoNameRef=nameSpan;
+      document.getElementById('food-file-input').click();
+    });
+
+    actionRow.appendChild(linkWrap);
+    actionRow.appendChild(camBtn);
+    body.appendChild(actionRow);
+
+    // Photo result area — shown after photo logged
+    const photoArea=document.createElement('div');
+    photoArea.className='meal-photo-result';
+    photoArea.style.display='none';
+    card._photoArea=photoArea;
+    card._camBtn=camBtn;
+
+    // Restore existing photo if present
+    if(existingPhoto){
+      renderInlinePhotoResult(photoArea,existingPhoto,camBtn,nameSpan,mealIdx);
+    }
+    body.appendChild(photoArea);
+  } else {
+    // Weekly plan view — just recipe link, no camera
+    const linkRow=document.createElement('div');linkRow.style.cssText='margin-top:4px;';
+    const link=document.createElement('a');
+    link.className='meal-card-recipe';
+    link.href=recipeUrl;link.target='_blank';link.rel='noopener';
+    link.innerHTML='<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1 9L9 1M9 1H3M9 1V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Recipe';
+    linkRow.appendChild(link);
+    body.appendChild(linkRow);
+  }
 
   card.appendChild(body);
   return card;
